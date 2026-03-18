@@ -14,6 +14,12 @@ export class Professional {
   @Column({ name: 'license_number', length: 100 })
   licenseNumber: string;
 
+  @Column({ name: 'sisa_verified', default: false })
+  sisaVerified: boolean;
+
+  @Column({ name: 'professional_type', nullable: true, length: 100 })
+  professionalType: string;
+
   @Column({ nullable: true, length: 200 })
   specialty: string;
 
