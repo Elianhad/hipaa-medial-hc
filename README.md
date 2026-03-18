@@ -8,7 +8,7 @@ Plataforma de Historia Clínica Electrónica (HCE) multi-tenant, conforme a **HI
 
 | Capa | Tecnología |
 |------|-----------|
-| Frontend | Next.js 14 (App Router), TailwindCSS |
+| Frontend | Next.js 16 (App Router), TailwindCSS |
 | Backend | Node.js, NestJS (arquitectura modular) |
 | Base de Datos | PostgreSQL con Row-Level Security (RLS) |
 | Autenticación | Auth0 (roles: SuperAdmin, TenantOrg, TenantProf, Paciente) |

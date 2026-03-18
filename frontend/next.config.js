@@ -1,15 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000'],
-    },
+  // Server Actions are stable in Next.js 15 — no longer under experimental
+  serverActions: {
+    allowedOrigins: ['localhost:3000'],
   },
   images: {
-    domains: [
-      'via.placeholder.com',
-      // Add your S3 bucket domain here in production
-      // e.g. 'hipaa-hce-clinical.s3.amazonaws.com'
+    // images.domains is deprecated in Next.js 15; use remotePatterns instead
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      // Add your S3 bucket pattern here in production, e.g.:
+      // { protocol: 'https', hostname: '*.s3.amazonaws.com' },
     ],
   },
   async headers() {
