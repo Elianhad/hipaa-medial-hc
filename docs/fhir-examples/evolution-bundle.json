@@ -1,0 +1,374 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "meta": {
+    "tag": [
+      {
+        "system": "https://hipaa-hce/tenant",
+        "code": "550e8400-e29b-41d4-a716-446655440000",
+        "display": "Clínica San Martín"
+      }
+    ]
+  },
+  "entry": [
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "1. ENCOUNTER — represents the consultation session",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:encounter-001",
+      "resource": {
+        "resourceType": "Encounter",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "11429006",
+                "display": "Consultation"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde",
+          "display": "Juan Pérez"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "primary performer"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "Practitioner/prof-uuid-0001",
+              "display": "Dr. Carlos Rodríguez"
+            }
+          }
+        ],
+        "period": {
+          "start": "2026-03-18T10:30:00-03:00",
+          "end": "2026-03-18T11:00:00-03:00"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "267036007",
+                "display": "Dyspnea (finding)"
+              }
+            ],
+            "text": "Disnea de esfuerzo progresiva"
+          }
+        ],
+        "serviceProvider": {
+          "reference": "Organization/550e8400-e29b-41d4-a716-446655440000",
+          "display": "Clínica San Martín"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "2. CONDITION — maps to the diagnosed problem (ICD-10)",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:condition-001",
+      "resource": {
+        "resourceType": "Condition",
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "encounter-diagnosis",
+                "display": "Encounter Diagnosis"
+              }
+            ]
+          }
+        ],
+        "severity": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "6736007",
+              "display": "Moderate"
+            }
+          ]
+        },
+        "code": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10",
+              "code": "J18.9",
+              "display": "Pneumonia, unspecified organism"
+            }
+          ],
+          "text": "Neumonía inespecífica"
+        },
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde"
+        },
+        "encounter": {
+          "reference": "urn:uuid:encounter-001"
+        },
+        "onsetDateTime": "2026-03-16",
+        "recordedDate": "2026-03-18",
+        "recorder": {
+          "reference": "Practitioner/prof-uuid-0001"
+        },
+        "note": [
+          {
+            "text": "Neumonía adquirida en la comunidad, lóbulo inferior derecho, confirmada por RX."
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://hipaa-hce/fhir/extension/problem-reference",
+            "valueReference": {
+              "reference": "Condition/existing-problem-fhir-id-abc123",
+              "display": "Problema crónico: Neumonías recurrentes"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "3a. OBSERVATION (S) — Subjective: chief complaint / patient history",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:obs-subjective",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11336-5",
+              "display": "History of chief complaint Narrative"
+            }
+          ],
+          "text": "Subjetivo (S) — Motivo de consulta"
+        },
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde"
+        },
+        "encounter": {
+          "reference": "urn:uuid:encounter-001"
+        },
+        "effectiveDateTime": "2026-03-18T10:30:00-03:00",
+        "performer": [
+          {
+            "reference": "Practitioner/prof-uuid-0001"
+          }
+        ],
+        "valueString": "Paciente masculino de 40 años que refiere tos productiva con expectoración amarillenta desde hace 3 días, fiebre de 38.5°C y disnea de esfuerzo progresiva. Niega hemoptisis."
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "3b. OBSERVATION (O) — Objective: physical examination findings",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:obs-objective",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29545-1",
+              "display": "Physical findings Narrative"
+            }
+          ],
+          "text": "Objetivo (O) — Examen físico"
+        },
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde"
+        },
+        "encounter": {
+          "reference": "urn:uuid:encounter-001"
+        },
+        "effectiveDateTime": "2026-03-18T10:30:00-03:00",
+        "performer": [
+          {
+            "reference": "Practitioner/prof-uuid-0001"
+          }
+        ],
+        "valueString": "PA: 125/80 mmHg | FC: 98 lpm | FR: 22 rpm | Temp: 38.4°C | SatO2: 94% AA. Murmullo vesicular disminuido en base derecha, matidez a la percusión, soplo tubárico. Sin adenopatías."
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "3c. OBSERVATION (A) — Assessment: diagnosis / clinical impression",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:obs-assessment",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "51848-0",
+              "display": "Evaluation note"
+            }
+          ],
+          "text": "Apreciación (A) — Diagnóstico"
+        },
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde"
+        },
+        "encounter": {
+          "reference": "urn:uuid:encounter-001"
+        },
+        "effectiveDateTime": "2026-03-18T10:30:00-03:00",
+        "performer": [
+          {
+            "reference": "Practitioner/prof-uuid-0001"
+          }
+        ],
+        "valueString": "Neumonía adquirida en la comunidad (NAC) leve-moderada. Criterios de Fine/PSI: clase II. No requiere internación en este momento.",
+        "interpretation": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation",
+                "code": "A",
+                "display": "Abnormal"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "_comment": "────────────────────────────────────────────────",
+      "_description": "3d. OBSERVATION (P) — Plan: therapeutic plan / next steps",
+      "_comment_end": "────────────────────────────────────────────────",
+      "fullUrl": "urn:uuid:obs-plan",
+      "resource": {
+        "resourceType": "Observation",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "18776-5",
+              "display": "Plan of care note"
+            }
+          ],
+          "text": "Plan (P) — Plan terapéutico"
+        },
+        "subject": {
+          "reference": "Patient/a3b8c12d-5678-4ef1-9012-3456789abcde"
+        },
+        "encounter": {
+          "reference": "urn:uuid:encounter-001"
+        },
+        "effectiveDateTime": "2026-03-18T10:30:00-03:00",
+        "performer": [
+          {
+            "reference": "Practitioner/prof-uuid-0001"
+          }
+        ],
+        "valueString": "1. Amoxicilina-Clavulánico 875/125 mg c/12h × 7 días VO.\n2. Paracetamol 1g c/8h SOS.\n3. Radiografía de tórax control en 4 semanas.\n4. Control en consultorio en 72hs o antes si fiebre persistente/desaturación.\n5. Indicar reposo, hidratación, no tabaquismo."
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    }
+  ]
+}

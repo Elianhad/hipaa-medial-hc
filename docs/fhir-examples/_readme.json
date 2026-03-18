@@ -1,0 +1,22 @@
+{
+  "_comment": "==========================================================================",
+  "_description": [
+    "FHIR R4 — Medical Evolution Payload for AWS HealthLake",
+    "This file shows the three FHIR resources sent as a Transaction Bundle",
+    "when a professional saves a SOAP evolution in the HCOP (Problem-Oriented",
+    "Medical Record).",
+    "",
+    "Resources included:",
+    "  1. Encounter  — the consultation session",
+    "  2. Condition  — the diagnosed problem (ICD-10 coded)",
+    "  3. Observation (×4) — the four SOAP sections (S/O/A/P)",
+    "",
+    "AWS HealthLake endpoint pattern:",
+    "  POST https://healthlake.<region>.amazonaws.com/datastore/<DATASTORE_ID>/r4",
+    "  Headers:",
+    "    Content-Type: application/fhir+json",
+    "    Accept:       application/fhir+json",
+    "  Auth: AWS Signature V4 (IAM role with AmazonHealthLakeFullAccess)"
+  ],
+  "_comment_end": "=========================================================================="
+}
