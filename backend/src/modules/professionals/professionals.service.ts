@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Professional } from './professional.entity';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
 import { MockSisaService } from './mock-sisa.service';
+import { UpdateProfessionalConfigDto } from './dto/update-professional-config.dto';
 
 @Injectable()
 export class ProfessionalsService {
@@ -16,7 +17,7 @@ export class ProfessionalsService {
     @InjectRepository(Professional)
     private readonly professionalRepo: Repository<Professional>,
     private readonly sisaService: MockSisaService,
-  ) {}
+  ) { }
 
   /**
    * Register a new professional.
@@ -45,7 +46,7 @@ export class ProfessionalsService {
     if (licenseData.licenseStatus !== 'ACTIVO') {
       throw new BadRequestException(
         `SISA: La matrícula ${dto.licenseNumber} se encuentra en estado ` +
-          `${licenseData.licenseStatus}. Solo se permiten matrículas ACTIVAS.`,
+        `${licenseData.licenseStatus}. Solo se permiten matrículas ACTIVAS.`,
       );
     }
 
@@ -94,5 +95,53 @@ export class ProfessionalsService {
       order: { createdAt: 'DESC' },
     });
     return { data, total, page, limit };
+  }
+
+  async getConfig(id: string) {
+    const professional = await this.findById(id);
+
+    return {
+      id: professional.id,
+      specialty: professional.specialty,
+      bio: professional.bio,
+      photoUrl: professional.photoUrl,
+      consultationFee: professional.consultationFee,
+      isPublic: professional.isPublic,
+      acceptedInsurances: professional.scheduleConfig?.acceptedInsurances ?? [],
+      weeklySchedule: professional.scheduleConfig?.weeklySchedule ?? {},
+      appointmentRules: professional.scheduleConfig?.appointmentRules ?? {},
+      scheduleConfig: professional.scheduleConfig,
+    };
+  }
+
+  async updateConfig(id: string, dto: UpdateProfessionalConfigDto) {
+    const professional = await this.findById(id);
+
+    if (dto.specialty !== undefined) {
+      professional.specialty = dto.specialty;
+    }
+    if (dto.bio !== undefined) {
+      professional.bio = dto.bio;
+    }
+    if (dto.photoUrl !== undefined) {
+      professional.photoUrl = dto.photoUrl;
+    }
+    if (dto.consultationFee !== undefined) {
+      professional.consultationFee = dto.consultationFee;
+    }
+    if (dto.isPublic !== undefined) {
+      professional.isPublic = dto.isPublic;
+    }
+
+    const currentConfig = professional.scheduleConfig ?? {};
+    professional.scheduleConfig = {
+      ...currentConfig,
+      acceptedInsurances: dto.acceptedInsurances ?? currentConfig.acceptedInsurances ?? [],
+      weeklySchedule: dto.weeklySchedule ?? currentConfig.weeklySchedule ?? {},
+      appointmentRules: dto.appointmentRules ?? currentConfig.appointmentRules ?? {},
+    };
+
+    const saved = await this.professionalRepo.save(professional);
+    return this.getConfig(saved.id);
   }
 }

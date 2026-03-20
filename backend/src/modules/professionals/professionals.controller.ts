@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Param,
   Body,
   Query,
@@ -12,13 +13,14 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { ProfessionalsService } from './professionals.service';
 import { CreateProfessionalDto } from './dto/create-professional.dto';
+import { UpdateProfessionalConfigDto } from './dto/update-professional-config.dto';
 
 @ApiTags('professionals')
 @ApiBearerAuth()
 @UseGuards(AuthGuard('jwt'))
 @Controller('professionals')
 export class ProfessionalsController {
-  constructor(private readonly professionalsService: ProfessionalsService) {}
+  constructor(private readonly professionalsService: ProfessionalsService) { }
 
   @ApiOperation({ summary: 'List all professionals (paginated)' })
   @Get()
@@ -43,9 +45,24 @@ export class ProfessionalsController {
     return this.professionalsService.findById(id);
   }
 
+  @ApiOperation({ summary: 'Get editable professional config for dashboard settings' })
+  @Get(':id/config')
+  getConfig(@Param('id', ParseUUIDPipe) id: string) {
+    return this.professionalsService.getConfig(id);
+  }
+
   @ApiOperation({ summary: 'Register a new professional with SISA license validation' })
   @Post()
   create(@Body() dto: CreateProfessionalDto) {
     return this.professionalsService.create(dto);
+  }
+
+  @ApiOperation({ summary: 'Update professional dashboard settings (profile, schedule, insurances)' })
+  @Patch(':id/config')
+  updateConfig(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateProfessionalConfigDto,
+  ) {
+    return this.professionalsService.updateConfig(id, dto);
   }
 }
