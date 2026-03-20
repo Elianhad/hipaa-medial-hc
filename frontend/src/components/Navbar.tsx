@@ -5,6 +5,7 @@ import { useUser } from '@/components/DemoSessionProvider';
 
 export function Navbar() {
     const { user, isLoading } = useUser();
+    const logoutHref = '/api/logout?returnTo=/';
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10">
@@ -46,7 +47,7 @@ export function Navbar() {
                                         Mi Dashboard
                                     </Link>
                                     <a
-                                        href="/api/demo-logout"
+                                        href={logoutHref}
                                         className="text-sm px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
                                     >
                                         Salir

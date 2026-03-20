@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useUser } from '@/components/DemoSessionProvider';
-import { Navbar } from '../components/Navbar';
 import { extractRoles } from '../lib/auth/roles';
 import { getPortalAccessState, LANDING_PORTALS } from '../lib/auth/portal-access';
 
@@ -46,8 +45,6 @@ export default function HomePage() {
 
     return (
         <main className="min-h-screen bg-slate-950 text-white">
-            <Navbar />
-
             {/* Hero Section */}
             <section className="relative overflow-hidden pt-32 pb-20">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.22),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(132,204,22,0.18),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" />
