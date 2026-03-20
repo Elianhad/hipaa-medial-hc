@@ -1,11 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository, Between } from 'typeorm';
 import { Professional } from '../professionals/professional.entity';
 import { User } from '../professionals/user.entity';
 import { Tenant, TenantStatus, TenantType } from './tenant.entity';
 import { TenantMembership } from './tenant-membership.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
+import { Appointment } from '../appointments/appointment.entity';
 
 @Injectable()
 export class TenantsService {
@@ -18,6 +19,8 @@ export class TenantsService {
         private readonly professionalRepo: Repository<Professional>,
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
+        @InjectRepository(Appointment)
+        private readonly appointmentRepo: Repository<Appointment>,
     ) { }
 
     /** Resolve a subdomain to its tenant record (used by public booking pages). */
@@ -102,5 +105,72 @@ export class TenantsService {
         }
         const membership = this.membershipRepo.create({ tenantId, userId, role: role as TenantMembership['role'] });
         return this.membershipRepo.save(membership);
+    }
+
+    /** Return high-level metrics for an organization tenant. */
+    async getOrgSummary(tenantId: string): Promise<{
+        activeProfessionals: number;
+        todayConsultations: number;
+        pendingAudit: number;
+        billingInProgress: number;
+    }> {
+        const activeProfessionals = await this.membershipRepo.count({
+            where: { tenantId, isActive: true },
+        });
+
+        const now = new Date();
+        const start = new Date(now);
+        start.setUTCHours(0, 0, 0, 0);
+        const end = new Date(now);
+        end.setUTCHours(23, 59, 59, 999);
+
+        const todayConsultations = await this.appointmentRepo.count({
+            where: { tenantId, scheduledAt: Between(start, end) },
+        });
+
+        return {
+            activeProfessionals,
+            todayConsultations,
+            pendingAudit: 0,
+            billingInProgress: 0,
+        };
+    }
+
+    /** Return staff list with professional details for an organization tenant. */
+    async getOrgStaffDetail(tenantId: string): Promise<{
+        id: string;
+        userId: string;
+        name: string;
+        specialty: string | null;
+        role: string;
+        isActive: boolean;
+    }[]> {
+        const memberships = await this.membershipRepo.find({
+            where: { tenantId, isActive: true },
+        });
+
+        if (!memberships.length) return [];
+
+        const userIds = memberships.map((m) => m.userId);
+        const [users, professionals] = await Promise.all([
+            this.userRepo.findBy({ id: In(userIds) }),
+            this.professionalRepo.findBy({ userId: In(userIds) }),
+        ]);
+
+        const userById = new Map(users.map((u) => [u.id, u]));
+        const profByUserId = new Map(professionals.map((p) => [p.userId, p]));
+
+        return memberships.map((m) => {
+            const user = userById.get(m.userId);
+            const prof = profByUserId.get(m.userId);
+            return {
+                id: m.id,
+                userId: m.userId,
+                name: [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || 'Sin nombre',
+                specialty: prof?.specialty ?? null,
+                role: m.role,
+                isActive: m.isActive,
+            };
+        });
     }
 }

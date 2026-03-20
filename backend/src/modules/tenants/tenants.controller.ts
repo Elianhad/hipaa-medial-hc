@@ -47,6 +47,24 @@ export class TenantsController {
         return this.tenantsService.create(dto);
     }
 
+    /** Return high-level metrics (summary) for an organization tenant. */
+    @ApiBearerAuth()
+    @UseGuards(AuthGuard('jwt'))
+    @ApiOperation({ summary: 'Get organization summary metrics' })
+    @Get(':id/summary')
+    getOrgSummary(@Param('id') id: string) {
+        return this.tenantsService.getOrgSummary(id);
+    }
+
+    /** Return staff list with professional details for an organization. */
+    @ApiBearerAuth()
+    @UseGuards(AuthGuard('jwt'))
+    @ApiOperation({ summary: 'Get organization staff with professional details' })
+    @Get(':id/staff')
+    getOrgStaff(@Param('id') id: string) {
+        return this.tenantsService.getOrgStaffDetail(id);
+    }
+
     /** List all active members of an organization tenant. */
     @ApiBearerAuth()
     @UseGuards(AuthGuard('jwt'))

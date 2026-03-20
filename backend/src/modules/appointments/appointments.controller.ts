@@ -30,6 +30,15 @@ export class AppointmentsController {
         return this.appointmentsService.getTodayByProfessional(professionalId, tenantId, date);
     }
 
+    @ApiOperation({ summary: "Get today's appointments for all professionals in an organization" })
+    @Get('organization/:tenantId/today')
+    getOrgTodayBoard(
+        @Param('tenantId', ParseUUIDPipe) tenantId: string,
+        @Query('date') date?: string,
+    ) {
+        return this.appointmentsService.getTodayByOrganization(tenantId, date);
+    }
+
     @ApiOperation({ summary: 'Mark attendance for an appointment (present/absent/pending)' })
     @Patch(':id/attendance')
     updateAttendance(
