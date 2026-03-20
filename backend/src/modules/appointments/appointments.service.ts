@@ -85,6 +85,49 @@ export class AppointmentsService {
         };
     }
 
+    async getTodayByOrganization(tenantId: string, date?: string) {
+        const targetDate = date ? new Date(`${date}T00:00:00.000Z`) : new Date();
+        const start = new Date(targetDate);
+        start.setUTCHours(0, 0, 0, 0);
+
+        const end = new Date(targetDate);
+        end.setUTCHours(23, 59, 59, 999);
+
+        const appointments = await this.appointmentRepo
+            .createQueryBuilder('appointment')
+            .where('appointment.tenant_id = :tenantId', { tenantId })
+            .andWhere('appointment.scheduled_at BETWEEN :start AND :end', { start, end })
+            .orderBy('appointment.scheduled_at', 'ASC')
+            .getMany();
+
+        const patientIds = [...new Set(appointments.map((a) => a.patientId))];
+        const patients = patientIds.length
+            ? await this.patientRepo.findBy({ id: In(patientIds) })
+            : [];
+
+        const patientById = new Map(
+            patients.map((p) => [p.id, `${p.firstName} ${p.lastName}`]),
+        );
+
+        const items = appointments.map((appointment) => ({
+            id: appointment.id,
+            patientId: appointment.patientId,
+            patientName: patientById.get(appointment.patientId) ?? 'Paciente',
+            professionalId: appointment.professionalId,
+            scheduledAt: appointment.scheduledAt,
+            reason: appointment.reason,
+            durationMinutes: appointment.durationMinutes,
+            appointmentStatus: appointment.status,
+            attendance: this.toAttendance(appointment.status),
+        }));
+
+        return {
+            date: start.toISOString().slice(0, 10),
+            total: items.length,
+            items,
+        };
+    }
+
     async updateAttendance(
         appointmentId: string,
         dto: UpdateAppointmentAttendanceDto,
