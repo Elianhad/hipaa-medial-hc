@@ -131,7 +131,9 @@ export class TenantsService {
         return {
             activeProfessionals,
             todayConsultations,
+            // TODO: calculate from real audit records once AuditModule has queryable data
             pendingAudit: 0,
+            // TODO: calculate from real billing records once BillingModule is implemented
             billingInProgress: 0,
         };
     }

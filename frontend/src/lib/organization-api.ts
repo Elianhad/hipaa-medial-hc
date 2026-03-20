@@ -146,9 +146,12 @@ export async function getOrgAgenda(
     return parseJsonResponse<OrgAgendaResponse>(response);
 }
 
-/** Billing endpoint is a stub — always falls back to demo data in v1. */
+/** Billing endpoint is a stub — the BillingModule is not yet implemented.
+ * TODO: Replace with real billing API once BillingModule is implemented.
+ * Always throws so callers fall back to demo data.
+ */
 export async function getOrgBilling(
     _tenantId = DEMO_ORG_TENANT_ID,
 ): Promise<OrgBillingResponse> {
-    throw new Error('Billing API not yet available (v1 stub)');
+    throw new Error('Billing API not yet available — use demo fallback (v1 stub)');
 }

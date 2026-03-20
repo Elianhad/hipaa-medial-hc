@@ -41,7 +41,7 @@ export default function OrgAgendaPage() {
         loadAgenda();
     }, []);
 
-    const specialties = useMemo(() => {
+    const professionalNames = useMemo(() => {
         const names = new Set(agenda.map((a) => a.professionalName).filter(Boolean) as string[]);
         return ['Todos', ...Array.from(names)];
     }, [agenda]);
@@ -73,7 +73,7 @@ export default function OrgAgendaPage() {
                     {/* Professional filter */}
                     <div className="flex gap-3 flex-wrap">
                         <span className="text-sm text-slate-500 self-center mr-2">Filtrar por profesional:</span>
-                        {specialties.map((f) => (
+                        {professionalNames.map((f) => (
                             <button
                                 key={f}
                                 type="button"
