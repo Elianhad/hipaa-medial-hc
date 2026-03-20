@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -14,6 +14,9 @@ import { StorageModule } from './modules/storage/storage.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
 import databaseConfig from './config/database.config';
+import { RoleValidationMiddleware } from './common/middleware/role-validation.middleware';
+import { RateLimitingMiddleware } from './common/middleware/rate-limiting.middleware';
+import { AuditLoggingMiddleware } from './common/middleware/audit-logging.middleware';
 
 @Module({
   imports: [
@@ -63,4 +66,25 @@ import databaseConfig from './config/database.config';
     AuditModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply middlewares in order:
+    // 1. Audit logging (logs all requests)
+    // 2. Rate limiting (applies limits based on endpoint)
+    // 3. Role validation (enforces access control)
+
+    consumer
+      .apply(AuditLoggingMiddleware)
+      .forRoutes('*');
+
+    consumer
+      .apply(RateLimitingMiddleware)
+      .forRoutes('*');
+
+    consumer
+      .apply(RoleValidationMiddleware)
+      .forRoutes(
+        { path: 'v1/dashboard*', method: RequestMethod.ALL },
+      );
+  }
+}

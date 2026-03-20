@@ -225,6 +225,65 @@ ALLOWED_ORIGINS=http://localhost:3000
 
 ---
 
+## Ejecucion Local
+
+Instalar dependencias desde la raiz del repositorio:
+
+```bash
+npm install
+```
+
+o con pnpm:
+
+```bash
+pnpm install
+```
+
+Levantar frontend y backend juntos desde la raiz:
+
+```bash
+npm run dev
+```
+
+o con pnpm:
+
+```bash
+pnpm run dev
+```
+
+Levantar cada servicio por separado:
+
+```bash
+npm run dev:frontend
+npm run dev:backend
+```
+
+o con pnpm:
+
+```bash
+pnpm run dev:frontend
+pnpm run dev:backend
+```
+
+---
+
+## Flujo de Entrada (Landing + Dashboard)
+
+Documentacion de flujo y reglas RBAC de UI:
+
+- [docs/entry-flow.md](docs/entry-flow.md)
+- [docs/role-claims-contract.md](docs/role-claims-contract.md)
+
+Tests de flujo frontend:
+
+```bash
+pnpm --dir frontend run test:flow
+pnpm --dir frontend run test:smoke
+pnpm --dir frontend run test
+```
+
+---
+
 ## Roles
 
 | Rol | Acceso |

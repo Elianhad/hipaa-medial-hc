@@ -5,7 +5,19 @@ import helmet from 'helmet';
 import * as compression from 'compression';
 import { AppModule } from './app.module';
 
+declare global {
+  // Guard against duplicated bootstrap execution in the same process.
+  // eslint-disable-next-line no-var
+  var __backendBootstrapped: boolean | undefined;
+}
+
 async function bootstrap() {
+  if (global.__backendBootstrapped) {
+    return;
+  }
+
+  global.__backendBootstrapped = true;
+
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log'],
   });
@@ -53,4 +65,7 @@ async function bootstrap() {
   console.log(`🚀 Backend running on port ${port}`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  global.__backendBootstrapped = false;
+  throw error;
+});

@@ -5,6 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
+
+function buildApiUrl(path: string) {
+  return `${API_BASE_URL}${path}`;
+}
+
 const schema = z.object({
   patientId: z.string().uuid(),
   professionalId: z.string().uuid(),
@@ -55,7 +61,7 @@ export function SoapEvolutionForm({
 
   async function onSubmit(data: FormData) {
     try {
-      const res = await fetch('/api/clinical-records/evolutions', {
+      const res = await fetch(buildApiUrl('/clinical-records/evolutions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

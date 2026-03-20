@@ -1,0 +1,17 @@
+{
+    "name": "hipaa-medial-hc",
+    "version": "0.1.0",
+    "private": true,
+    "workspaces": [
+        "backend",
+        "frontend"
+    ],
+    "scripts": {
+        "dev": "node scripts/dev.js",
+        "dev:backend": "node scripts/run-workspace.js backend start:dev",
+        "dev:frontend": "node scripts/run-workspace.js frontend dev",
+        "build": "node scripts/run-many.js build",
+        "lint": "node scripts/run-many.js lint",
+        "seed": "node scripts/seed.js"
+    }
+}

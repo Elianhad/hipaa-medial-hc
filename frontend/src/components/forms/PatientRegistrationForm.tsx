@@ -6,6 +6,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import toast from 'react-hot-toast';
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
+
+function buildApiUrl(path: string) {
+  return `${API_BASE_URL}${path}`;
+}
+
 // ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
@@ -74,7 +80,7 @@ export function PatientRegistrationForm() {
     setLookupLoading(true);
     try {
       const res = await fetch(
-        `/api/patients/verify/${encodeURIComponent(dni)}/${encodeURIComponent(sex)}`,
+        buildApiUrl(`/patients/verify/${encodeURIComponent(dni)}/${encodeURIComponent(sex)}`),
         { headers: { 'Content-Type': 'application/json' } },
       );
 
@@ -104,7 +110,7 @@ export function PatientRegistrationForm() {
 
   async function onSubmit(data: FormData) {
     try {
-      const res = await fetch('/api/patients', {
+      const res = await fetch(buildApiUrl('/patients'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

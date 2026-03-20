@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Server Actions are stable in Next.js 15 — no longer under experimental
-  serverActions: {
-    allowedOrigins: ['localhost:3000'],
-  },
   images: {
     // images.domains is deprecated in Next.js 15; use remotePatterns instead
     remotePatterns: [

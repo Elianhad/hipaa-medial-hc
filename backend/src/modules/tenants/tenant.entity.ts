@@ -1,5 +1,10 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
+export enum TenantType {
+  INDEPENDENT = 'independent',
+  ORGANIZATION = 'organization',
+}
+
 export enum TenantStatus {
   ACTIVE = 'active',
   SUSPENDED = 'suspended',
@@ -16,6 +21,9 @@ export class Tenant {
 
   @Column({ length: 100, unique: true })
   subdomain: string;
+
+  @Column({ type: 'enum', enum: TenantType, default: TenantType.INDEPENDENT })
+  type: TenantType;
 
   @Column({ type: 'enum', enum: TenantStatus, default: TenantStatus.ACTIVE })
   status: TenantStatus;
