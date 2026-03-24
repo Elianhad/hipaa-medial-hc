@@ -7,10 +7,11 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 import { UserRole } from '../enums/user-role.enum';
+import { extractNormalizedRoles, hasRole } from '../auth/role-claims';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(private reflector: Reflector) { }
 
   canActivate(context: ExecutionContext): boolean {
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
@@ -24,12 +25,16 @@ export class RolesGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const userRole: string =
-      user?.['https://hipaa-hce/role'] ?? UserRole.Paciente;
+    const normalizedRoles = extractNormalizedRoles(user);
 
-    if (!requiredRoles.includes(userRole as UserRole)) {
+    const allowed = requiredRoles.some((requiredRole) =>
+      hasRole(normalizedRoles, requiredRole),
+    );
+
+    if (!allowed) {
+      const detectedRoles = normalizedRoles.join(', ') || UserRole.Paciente;
       throw new ForbiddenException(
-        `Role '${userRole}' is not allowed to access this resource`,
+        `Role(s) '${detectedRoles}' are not allowed to access this resource`,
       );
     }
 

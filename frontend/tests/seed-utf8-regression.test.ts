@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { execSync } from 'child_process';
 import path from 'path';
 
+const testSlug = process.env.TEST_INDEPENDENT_SLUG ?? 'drfulano';
+
 test('UTF-8 seed regression: accented characters should be preserved in database', async () => {
     const projectRoot = path.resolve(__dirname, '..');
     const backendRoot = path.resolve(projectRoot, 'backend');
@@ -45,7 +47,7 @@ test('UTF-8 seed regression: accented characters should be preserved in database
     let result: string;
     try {
         result = execSync(
-            `psql "${connString}" -t -c "SELECT name FROM tenants WHERE subdomain='drfulano';"`,
+            `psql "${connString}" -t -c "SELECT name FROM tenants WHERE subdomain='${testSlug}';"`,
             {
                 encoding: 'utf8',
                 env: { ...process.env, PGPASSWORD: password },
@@ -55,7 +57,7 @@ test('UTF-8 seed regression: accented characters should be preserved in database
     } catch {
         // Fallback to docker
         result = execSync(
-            `docker exec -i hipaa-postgres psql -U ${user} -d ${dbName} -t -c "SELECT name FROM tenants WHERE subdomain='drfulano';"`,
+            `docker exec -i hipaa-postgres psql -U ${user} -d ${dbName} -t -c "SELECT name FROM tenants WHERE subdomain='${testSlug}';"`,
             {
                 encoding: 'utf8',
                 stdio: 'pipe',
@@ -64,7 +66,7 @@ test('UTF-8 seed regression: accented characters should be preserved in database
     }
 
     // Check that we have the tenant name
-    assert.ok(result, 'Should have found a tenant name for drfulano');
+    assert.ok(result, `Should have found a tenant name for ${testSlug}`);
 
     // Check for expected accented characters
     const hasAccent = /[áéíóúñü]/.test(result);

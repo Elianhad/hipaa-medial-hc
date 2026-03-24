@@ -2,7 +2,7 @@
 
 /**
  * Public booking page for an independent professional.
- * URL: /booking/[slug]   (or https://drfulano.app.com/ in production)
+ * URL: /booking/[slug]   (or https://{subdominio}.app.com/ in production)
  *
  * Patients can browse the professional's profile and book a slot
  * WITHOUT being logged in.  Auth is only required at checkout.

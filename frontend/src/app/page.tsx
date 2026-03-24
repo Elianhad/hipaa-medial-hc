@@ -1,9 +1,10 @@
 "use client";
 
 import Link from 'next/link';
-import { useUser } from '@/components/DemoSessionProvider';
+import { useUser } from '@/components/SessionProvider';
 import { extractRoles } from '../lib/auth/roles';
 import { getPortalAccessState, LANDING_PORTALS } from '../lib/auth/portal-access';
+import { PUBLIC_ORGANIZATION_SLUG, PUBLIC_PROFESSIONAL_SLUG } from '../lib/public-slugs';
 
 const features = [
     {
@@ -167,10 +168,10 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Demo Links */}
+            {/* Public Links */}
             <section className="py-16 bg-slate-900/30 border-t border-white/10">
                 <div className="mx-auto max-w-6xl px-6">
-                    <div className="grid md:grid-cols-2 gap-12 items-start">
+                    <div className="grid md:grid-cols-1 gap-12 items-start">
                         {/* Public portals */}
                         <div>
                             <h3 className="text-2xl font-semibold text-white mb-3">Portales Públicos</h3>
@@ -179,52 +180,22 @@ export default function HomePage() {
                             </p>
                             <div className="flex flex-col gap-4">
                                 <Link
-                                    href="/booking/drfulano"
+                                    href={`/booking/${PUBLIC_PROFESSIONAL_SLUG}`}
                                     className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 p-5 transition"
                                 >
                                     <h4 className="text-base font-semibold text-emerald-300">Profesional Independiente</h4>
                                     <p className="mt-1 text-sm text-slate-300">Dr. Juan Fulano — Clínica Médica</p>
-                                    <p className="mt-2 text-xs text-slate-500">/booking/drfulano</p>
+                                    <p className="mt-2 text-xs text-slate-500">/booking/[profesional]</p>
                                 </Link>
                                 <Link
-                                    href="/org/clinica-demo"
+                                    href={`/org/${PUBLIC_ORGANIZATION_SLUG}`}
                                     className="rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 p-5 transition"
                                 >
                                     <h4 className="text-base font-semibold text-orange-300">Organización</h4>
-                                    <p className="mt-1 text-sm text-slate-300">Clínica Demo Multiespecialidad</p>
-                                    <p className="mt-2 text-xs text-slate-500">/org/clinica-demo</p>
+                                    <p className="mt-1 text-sm text-slate-300">Portal público institucional</p>
+                                    <p className="mt-2 text-xs text-slate-500">/org/[institucion]</p>
                                 </Link>
                             </div>
-                        </div>
-
-                        {/* Full system demo */}
-                        <div>
-                            <h3 className="text-2xl font-semibold text-white mb-3">Probar la Plataforma</h3>
-                            <p className="text-slate-400 mb-6 text-sm">
-                                Explorá los paneles internos con usuarios de demostración — paciente, profesional y administrador.
-                            </p>
-                            <Link
-                                href="/demo"
-                                className="group block rounded-xl border border-sky-500/30 bg-sky-500/10 hover:bg-sky-500/20 p-6 transition"
-                            >
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-emerald-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                                        ▶
-                                    </div>
-                                    <div>
-                                        <h4 className="text-base font-semibold text-sky-300">Acceso Demo Completo</h4>
-                                        <p className="text-xs text-slate-400">3 roles disponibles</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    <span className="text-xs rounded-full bg-sky-500/20 text-sky-300 px-2.5 py-0.5">Paciente</span>
-                                    <span className="text-xs rounded-full bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5">Profesional</span>
-                                    <span className="text-xs rounded-full bg-orange-500/20 text-orange-300 px-2.5 py-0.5">Org Admin</span>
-                                </div>
-                                <span className="text-sm text-sky-400 group-hover:text-sky-300 transition font-medium">
-                                    Ingresar al modo demo →
-                                </span>
-                            </Link>
                         </div>
                     </div>
                 </div>

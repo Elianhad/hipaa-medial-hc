@@ -32,6 +32,36 @@ test('extractRoles should read namespaced claims', () => {
     assert.deepEqual(roles, ['tenantprof']);
 });
 
+test('extractRoles should fallback to appState registration role', () => {
+    const user = {
+        appState: {
+            registration: {
+                role: 'TenantProf',
+            },
+        },
+    };
+
+    const roles = extractRoles(user);
+
+    assert.deepEqual(roles, ['tenantprof']);
+});
+
+test('extractRoles should derive organization/professional roles from registration flags', () => {
+    const user = {
+        appState: {
+            registration: {
+                hasProfessionalProfile: true,
+                hasOrganizationMembership: true,
+            },
+        },
+    };
+
+    const roles = extractRoles(user);
+
+    assert.equal(roles.includes('professional'), true);
+    assert.equal(roles.includes('orgstaff'), true);
+});
+
 test('hasAnyRole should return true when one role matches', () => {
     assert.equal(hasAnyRole(['a', 'b', 'professional'], ['orgadmin', 'professional']), true);
 });

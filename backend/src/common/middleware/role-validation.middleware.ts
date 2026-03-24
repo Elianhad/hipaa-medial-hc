@@ -1,5 +1,7 @@
 import { Injectable, NestMiddleware, ForbiddenException, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { extractNormalizedRoles, hasRole } from '../auth/role-claims';
+import { UserRole } from '../enums/user-role.enum';
 
 interface AuthenticatedRequest extends Request {
     user?: {
@@ -45,7 +47,7 @@ export class RoleValidationMiddleware implements NestMiddleware {
         }
 
         const userSub = req.user.sub;
-        const roles = this.extractRoles(req.user);
+        const roles = extractNormalizedRoles(req.user);
 
         // Professional portal access
         if (path.includes('/professional')) {
@@ -77,46 +79,15 @@ export class RoleValidationMiddleware implements NestMiddleware {
         next();
     }
 
-    private extractRoles(user: any): string[] {
-        const roles = new Set<string>();
-
-        const claimKeys = [
-            'roles',
-            'role',
-            'https://hipaa-hce.example.com/roles',
-            'https://hipaa-hce.example.com/role',
-            'https://hipaa-medial-hc.example.com/roles',
-            'https://hipaa-medial-hc.example.com/role',
-        ];
-
-        for (const key of claimKeys) {
-            const value = user[key];
-            if (typeof value === 'string' && value.trim()) {
-                roles.add(this.normalizeRole(value));
-            }
-            if (Array.isArray(value)) {
-                for (const role of value) {
-                    if (typeof role === 'string' && role.trim()) {
-                        roles.add(this.normalizeRole(role));
-                    }
-                }
-            }
-        }
-
-        return Array.from(roles);
-    }
-
-    private normalizeRole(role: string): string {
-        return role.trim().toLowerCase().replace(/[\s_-]+/g, '');
-    }
-
     private hasProfessionalRole(roles: string[]): boolean {
-        const accepted = ['professional', 'tenantprof', 'prof'];
-        return roles.some((role) => accepted.includes(role));
+        return hasRole(roles, UserRole.Professional) || hasRole(roles, UserRole.TenantProf);
     }
 
     private hasOrganizationRole(roles: string[]): boolean {
-        const accepted = ['orgadmin', 'orgstaff'];
-        return roles.some((role) => accepted.includes(role));
+        return (
+            hasRole(roles, UserRole.OrgAdmin)
+            || hasRole(roles, UserRole.OrgStaff)
+            || hasRole(roles, UserRole.TenantOrg)
+        );
     }
 }

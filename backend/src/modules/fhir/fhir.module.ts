@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { FhirService } from './fhir.service';
 import { FhirController } from './fhir.controller';
+import { TerminologyService } from './terminology.service';
 
 /**
  * FhirModule
@@ -12,8 +13,8 @@ import { FhirController } from './fhir.controller';
  */
 @Module({
   imports: [HttpModule],
-  providers: [FhirService],
+  providers: [FhirService, TerminologyService],
   controllers: [FhirController],
-  exports: [FhirService],
+  exports: [FhirService, TerminologyService],
 })
-export class FhirModule {}
+export class FhirModule { }

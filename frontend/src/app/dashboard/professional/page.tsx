@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ProfessionalPortalGuard } from '../../../components/ProfessionalPortalGuard';
 import {
-  getProfessionalTodayBoard,
+  getProfessionalTodayBoardAuto,
   patchAppointmentAttendance,
   type AppointmentAttendanceApi,
-} from '@/lib/professional-api';
+} from '@/app/actions/professionals';
 
 type AttendanceStatus = 'pendiente' | 'presente' | 'ausente';
 
@@ -22,49 +22,6 @@ interface TodayAppointment {
   status: AttendanceStatus;
 }
 
-const INITIAL_APPOINTMENTS: TodayAppointment[] = [
-  {
-    id: 'apt-001',
-    patientId: 'pat-ana-garcia',
-    patientName: 'Ana García',
-    age: 34,
-    time: '09:00',
-    reason: 'Control de HTA',
-    insurance: 'OSDE 210',
-    status: 'pendiente',
-  },
-  {
-    id: 'apt-002',
-    patientId: 'pat-carlos-perez',
-    patientName: 'Carlos Pérez',
-    age: 58,
-    time: '09:30',
-    reason: 'Seguimiento post alta',
-    insurance: 'Swiss Medical',
-    status: 'presente',
-  },
-  {
-    id: 'apt-003',
-    patientId: 'pat-lucia-mendez',
-    patientName: 'Lucía Méndez',
-    age: 42,
-    time: '10:15',
-    reason: 'Cefalea persistente',
-    insurance: 'Galeno',
-    status: 'ausente',
-  },
-  {
-    id: 'apt-004',
-    patientId: 'pat-pedro-fernandez',
-    patientName: 'Pedro Fernández',
-    age: 67,
-    time: '11:00',
-    reason: 'Diabetes tipo II - control',
-    insurance: 'PAMI',
-    status: 'pendiente',
-  },
-];
-
 const statusStyles: Record<AttendanceStatus, string> = {
   pendiente: 'bg-amber-100 text-amber-800',
   presente: 'bg-emerald-100 text-emerald-800',
@@ -72,7 +29,7 @@ const statusStyles: Record<AttendanceStatus, string> = {
 };
 
 export default function ProfessionalDashboardPage() {
-  const [appointments, setAppointments] = useState(INITIAL_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<TodayAppointment[]>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isApiConnected, setIsApiConnected] = useState(false);
@@ -80,7 +37,7 @@ export default function ProfessionalDashboardPage() {
   useEffect(() => {
     const loadBoard = async () => {
       try {
-        const board = await getProfessionalTodayBoard();
+        const board = await getProfessionalTodayBoardAuto();
         const mapped: TodayAppointment[] = board.items.map((item) => ({
           id: item.id,
           patientId: item.patientId,
@@ -100,7 +57,8 @@ export default function ProfessionalDashboardPage() {
         setStatusMessage(null);
       } catch (_error) {
         setIsApiConnected(false);
-        setStatusMessage('Mostrando datos demo. Al habilitar Auth0/API se sincroniza automáticamente.');
+        setAppointments([]);
+        setStatusMessage('No se pudo cargar la agenda real desde backend. Verifica autenticación y conexión API.');
       } finally {
         setIsLoadingBoard(false);
       }
@@ -206,6 +164,11 @@ export default function ProfessionalDashboardPage() {
               </p>
             </div>
             <div className="divide-y divide-emerald-100/70">
+              {appointments.length === 0 && !isLoadingBoard && (
+                <article className="px-6 py-6 text-sm text-slate-600">
+                  No hay citas para mostrar o la agenda no pudo sincronizarse.
+                </article>
+              )}
               {appointments.map((appointment) => (
                 <article key={appointment.id} className="px-6 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">

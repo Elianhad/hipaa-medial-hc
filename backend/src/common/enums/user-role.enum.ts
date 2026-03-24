@@ -1,5 +1,5 @@
 export enum UserRole {
-  SuperAdmin = 'SuperAdmin',
+  SuperAdmin = 'superadmin',   // global administrator (owns the platform)
   /** @deprecated use OrgAdmin */
   TenantOrg = 'TenantOrg',
   OrgAdmin = 'OrgAdmin',           // administrator of an organization tenant

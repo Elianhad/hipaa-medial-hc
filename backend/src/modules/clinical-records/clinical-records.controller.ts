@@ -17,16 +17,19 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { UserRole } from '../../common/enums/user-role.enum';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('clinical-records')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard, PermissionsGuard)
 @Controller('clinical-records')
 export class ClinicalRecordsController {
-  constructor(private readonly service: ClinicalRecordsService) {}
+  constructor(private readonly service: ClinicalRecordsService) { }
 
   @ApiOperation({ summary: 'Create a SOAP evolution (HCOP)' })
   @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+  @Permissions('clinical-records:write')
   @Post('evolutions')
   createEvolution(
     @TenantId() tenantId: string,
@@ -41,6 +44,7 @@ export class ClinicalRecordsController {
   }
 
   @ApiOperation({ summary: 'List evolutions for a patient' })
+  @Permissions('clinical-records:read')
   @Get('evolutions/patient/:patientId')
   getEvolutions(
     @TenantId() tenantId: string,
@@ -57,6 +61,7 @@ export class ClinicalRecordsController {
   }
 
   @ApiOperation({ summary: 'Get a specific evolution' })
+  @Permissions('clinical-records:read')
   @Get('evolutions/:id')
   getEvolution(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getEvolutionById(id);
@@ -64,6 +69,7 @@ export class ClinicalRecordsController {
 
   @ApiOperation({ summary: 'Create a problem (HCOP)' })
   @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+  @Permissions('clinical-records:write')
   @Post('problems')
   createProblem(
     @TenantId() tenantId: string,
@@ -78,6 +84,7 @@ export class ClinicalRecordsController {
   }
 
   @ApiOperation({ summary: 'List problems for a patient' })
+  @Permissions('clinical-records:read')
   @Get('problems/patient/:patientId')
   getProblems(
     @TenantId() tenantId: string,

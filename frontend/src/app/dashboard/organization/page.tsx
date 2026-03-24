@@ -4,14 +4,21 @@ import { useEffect, useState } from 'react';
 import { OrganizationPortalGuard } from '../../../components/OrganizationPortalGuard';
 import {
     getOrgSummary,
-    DEMO_ORG_SUMMARY,
     type OrgSummaryResponse,
 } from '@/lib/organization-api';
 
+const EMPTY_SUMMARY: OrgSummaryResponse = {
+    activeProfessionals: 0,
+    todayConsultations: 0,
+    pendingAudit: 0,
+    billingInProgress: 0,
+};
+
 export default function OrganizationDashboardPage() {
-    const [summary, setSummary] = useState<OrgSummaryResponse>(DEMO_ORG_SUMMARY);
+    const [summary, setSummary] = useState<OrgSummaryResponse>(EMPTY_SUMMARY);
     const [isApiConnected, setIsApiConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadSummary = async () => {
@@ -19,8 +26,10 @@ export default function OrganizationDashboardPage() {
                 const data = await getOrgSummary();
                 setSummary(data);
                 setIsApiConnected(true);
-            } catch {
+                setLoadError(null);
+            } catch (error: any) {
                 setIsApiConnected(false);
+                setLoadError(error?.message ?? 'No se pudo conectar con backend.');
             } finally {
                 setIsLoading(false);
             }
@@ -48,10 +57,10 @@ export default function OrganizationDashboardPage() {
                         </p>
                     </header>
 
-                    {/* Demo mode banner */}
+                    {/* Backend connectivity banner */}
                     {!isApiConnected && !isLoading && (
-                        <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
-                            📊 Mostrando datos demo. Al habilitar Auth0/API se sincroniza automáticamente.
+                        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800">
+                            Sin datos en vivo de backend. {loadError ?? 'Revisá tenant/autenticación y conectividad.'}
                         </div>
                     )}
 

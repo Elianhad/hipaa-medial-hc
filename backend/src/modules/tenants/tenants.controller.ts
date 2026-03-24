@@ -13,6 +13,8 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { TenantsService } from './tenants.service';
 import { CreateTenantDto } from './dto/create-tenant.dto';
 import { AddMemberDto } from './dto/add-member.dto';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('tenants')
 @Controller('tenants')
@@ -31,16 +33,18 @@ export class TenantsController {
     }
 
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'Get tenant by ID' })
+    @Permissions('tenants:read')
     @Get(':id')
     findById(@Param('id') id: string) {
         return this.tenantsService.findById(id);
     }
 
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'Create a new tenant' })
+    @Permissions('tenants:write')
     @Post()
     @HttpCode(HttpStatus.CREATED)
     create(@Body() dto: CreateTenantDto) {
@@ -49,8 +53,9 @@ export class TenantsController {
 
     /** Return high-level metrics (summary) for an organization tenant. */
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'Get organization summary metrics' })
+    @Permissions('tenants:read')
     @Get(':id/summary')
     getOrgSummary(@Param('id') id: string) {
         return this.tenantsService.getOrgSummary(id);
@@ -58,8 +63,9 @@ export class TenantsController {
 
     /** Return staff list with professional details for an organization. */
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'Get organization staff with professional details' })
+    @Permissions('tenants:read')
     @Get(':id/staff')
     getOrgStaff(@Param('id') id: string) {
         return this.tenantsService.getOrgStaffDetail(id);
@@ -67,8 +73,9 @@ export class TenantsController {
 
     /** List all active members of an organization tenant. */
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'List organization members' })
+    @Permissions('tenants:read')
     @Get(':id/members')
     findMembers(@Param('id') id: string) {
         return this.tenantsService.findMembers(id);
@@ -76,8 +83,9 @@ export class TenantsController {
 
     /** Add a professional to an organization as staff or admin. */
     @ApiBearerAuth()
-    @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'), PermissionsGuard)
     @ApiOperation({ summary: 'Add member to organization tenant' })
+    @Permissions('tenants:write')
     @Post(':id/members')
     @HttpCode(HttpStatus.CREATED)
     addMember(@Param('id') id: string, @Body() dto: AddMemberDto) {

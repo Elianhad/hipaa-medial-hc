@@ -12,15 +12,18 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import { UpdateAppointmentAttendanceDto } from './dto/update-appointment-attendance.dto';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('appointments')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller('appointments')
 export class AppointmentsController {
     constructor(private readonly appointmentsService: AppointmentsService) { }
 
     @ApiOperation({ summary: 'Get daily board for a professional (today by default)' })
+    @Permissions('appointments:read')
     @Get('professional/:professionalId/today')
     getTodayBoard(
         @Param('professionalId', ParseUUIDPipe) professionalId: string,
@@ -31,6 +34,7 @@ export class AppointmentsController {
     }
 
     @ApiOperation({ summary: "Get today's appointments for all professionals in an organization" })
+    @Permissions('appointments:read')
     @Get('organization/:tenantId/today')
     getOrgTodayBoard(
         @Param('tenantId', ParseUUIDPipe) tenantId: string,
@@ -40,6 +44,7 @@ export class AppointmentsController {
     }
 
     @ApiOperation({ summary: 'Mark attendance for an appointment (present/absent/pending)' })
+    @Permissions('appointments:write')
     @Patch(':id/attendance')
     updateAttendance(
         @Param('id', ParseUUIDPipe) id: string,

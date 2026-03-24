@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { ProfessionalLocation } from './professional-location.entity';
 
 @Entity('professionals')
 export class Professional {
@@ -15,7 +16,16 @@ export class Professional {
   licenseNumber: string;
 
   @Column({ name: 'sisa_verified', default: false })
-  sisaVerified: boolean;
+  professionalIdValidated: boolean;
+
+  // Backward-compatible alias for existing code/tests that still reference sisaVerified.
+  get sisaVerified(): boolean {
+    return this.professionalIdValidated;
+  }
+
+  set sisaVerified(value: boolean) {
+    this.professionalIdValidated = value;
+  }
 
   @Column({ name: 'professional_type', nullable: true, length: 100 })
   professionalType: string;
@@ -43,6 +53,12 @@ export class Professional {
 
   @Column({ name: 'is_public', default: true })
   isPublic: boolean;
+
+  @OneToMany(() => ProfessionalLocation, (location) => location.professional, {
+    cascade: true,
+    eager: false,
+  })
+  locations: ProfessionalLocation[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

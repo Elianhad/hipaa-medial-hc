@@ -1,43 +1,71 @@
 import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
+import { auth0 } from '@/lib/auth0';
+
+function extractTenantSubdomain(host: string | null): string | undefined {
+    if (!host) {
+        return undefined;
+    }
+
+    const hostWithoutPort = host.split(':')[0].trim().toLowerCase();
+    if (!hostWithoutPort) {
+        return undefined;
+    }
+
+    const parts = hostWithoutPort.split('.').filter(Boolean);
+    if (parts.length >= 3) {
+        return parts[0];
+    }
+
+    if (parts.length === 2 && parts[1] === 'localhost') {
+        return parts[0];
+    }
+
+    return undefined;
+}
 
 /**
- * Custom /api/auth/me handler.
- * Priority: demo-session cookie → Auth0 session → null (anonymous).
- *
- * This overrides the default @auth0/nextjs-auth0 handler so that demo logins
- * work without a real Auth0 tenant configured.
+ * Returns the current Auth0 session user or null (anonymous).
  */
-export async function GET() {
-    const cookieStore = await cookies();
-    const demoSession = cookieStore.get('demo-session');
+export async function GET(request: Request) {
+    try {
+        const session = await auth0.getSession();
+        if (session?.user) {
+            let registration: Record<string, unknown> | null = null;
 
-    // 1. Demo session takes priority
-    if (demoSession?.value) {
-        try {
-            const user = JSON.parse(Buffer.from(demoSession.value, 'base64').toString());
-            return NextResponse.json(user);
-        } catch {
-            // Corrupted demo cookie — fall through
-        }
-    }
+            try {
+                const tokenResponse = await auth0.getAccessToken();
+                const token = tokenResponse?.token;
+                const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+                const tenantIdHeader = request.headers.get('x-tenant-id') ?? undefined;
+                const tenantSubdomain = extractTenantSubdomain(request.headers.get('host'));
 
-    // 2. Real Auth0 session
-    const auth0ClientId = process.env.AUTH0_CLIENT_ID;
-    const isAuth0Configured = auth0ClientId && auth0ClientId !== 'CHANGE_ME';
+                if (token) {
+                    const registrationResponse = await fetch(`${backendBaseUrl}/auth/registration-status`, {
+                        method: 'GET',
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                        cache: 'no-store',
+                    });
 
-    if (isAuth0Configured) {
-        try {
-            const { getSession } = await import('@auth0/nextjs-auth0');
-            const session = await getSession();
-            if (session?.user) {
-                return NextResponse.json(session.user);
+                    if (registrationResponse.ok) {
+                        registration = await registrationResponse.json().catch(() => null);
+                    }
+                }
+            } catch {
+                // Sync is best-effort and should not break session reads.
             }
-        } catch {
-            // Auth0 fetch error — fall through to anonymous
+
+            return NextResponse.json({
+                ...session.user,
+                appState: {
+                    registration,
+                },
+            });
         }
+    } catch {
+        // Session unavailable — fall through to anonymous
     }
 
-    // 3. Anonymous
     return NextResponse.json(null);
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,6 +10,18 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v
 
 function buildApiUrl(path: string) {
   return `${API_BASE_URL}${path}`;
+}
+
+function runEditorCommand(command: string) {
+  if (typeof document === 'undefined') return;
+  document.execCommand(command, false);
+}
+
+function editorHtmlToPlainText(html: string): string {
+  if (typeof document === 'undefined') return html;
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  return container.innerText.replace(/\u00a0/g, ' ').trim();
 }
 
 const schema = z.object({
@@ -47,6 +60,8 @@ export function SoapEvolutionForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -56,8 +71,34 @@ export function SoapEvolutionForm({
       appointmentId,
       evolutionDate: new Date().toISOString().split('T')[0],
       evolutionTime: new Date().toTimeString().slice(0, 5),
+      subjective: '',
     },
   });
+
+  const subjectiveEditorRef = useRef<HTMLDivElement | null>(null);
+  const subjectiveValue = watch('subjective') ?? '';
+
+  function syncSubjectiveField() {
+    const editor = subjectiveEditorRef.current;
+    if (!editor) return;
+    const plainText = editorHtmlToPlainText(editor.innerHTML);
+    setValue('subjective', plainText, { shouldDirty: true, shouldTouch: true });
+  }
+
+  function handleEditorAction(command: string) {
+    const editor = subjectiveEditorRef.current;
+    if (!editor) return;
+    editor.focus();
+    runEditorCommand(command);
+    syncSubjectiveField();
+  }
+
+  function clearSubjectiveEditor() {
+    const editor = subjectiveEditorRef.current;
+    if (!editor) return;
+    editor.innerHTML = '';
+    setValue('subjective', '', { shouldDirty: true, shouldTouch: true });
+  }
 
   async function onSubmit(data: FormData) {
     try {
@@ -80,12 +121,6 @@ export function SoapEvolutionForm({
   }
 
   const soapFields = [
-    {
-      key: 'subjective' as const,
-      label: 'S — Subjetivo',
-      sublabel: 'Motivo de consulta y síntomas referidos por el paciente',
-      placeholder: 'Paciente refiere…',
-    },
     {
       key: 'objective' as const,
       label: 'O — Objetivo',
@@ -118,6 +153,7 @@ export function SoapEvolutionForm({
       {/* Hidden fields */}
       <input type="hidden" {...register('patientId')} />
       <input type="hidden" {...register('professionalId')} />
+      <input type="hidden" {...register('subjective')} />
       {appointmentId && <input type="hidden" {...register('appointmentId')} />}
 
       {/* Date / Time */}
@@ -173,6 +209,74 @@ export function SoapEvolutionForm({
           </select>
         </div>
       )}
+
+      <div>
+        <label className="block text-sm font-semibold text-slate-700">
+          S — Subjetivo (MC + EA)
+        </label>
+        <p className="text-xs text-slate-400 mb-2">
+          Escribe el relato clínico con formato enriquecido para mejorar legibilidad en la anamnesis.
+        </p>
+
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleEditorAction('bold')}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Negrita
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleEditorAction('italic')}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Cursiva
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleEditorAction('insertUnorderedList')}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Lista
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => handleEditorAction('insertOrderedList')}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Numerada
+          </button>
+          <button
+            type="button"
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={clearSubjectiveEditor}
+            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Limpiar
+          </button>
+        </div>
+
+        <div className="relative">
+          {!subjectiveValue && (
+            <p className="pointer-events-none absolute left-3 top-2 text-sm text-slate-400">
+              MC: Motivo de consulta...\nEA: Enfermedad actual...
+            </p>
+          )}
+          <div
+            ref={subjectiveEditorRef}
+            contentEditable
+            onInput={syncSubjectiveField}
+            className="min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            aria-label="Campo enriquecido para subjetivo"
+            suppressContentEditableWarning
+          />
+        </div>
+      </div>
 
       {/* SOAP sections */}
       {soapFields.map((field) => (

@@ -10,6 +10,7 @@ import { ProfessionalsModule } from './modules/professionals/professionals.modul
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ClinicalRecordsModule } from './modules/clinical-records/clinical-records.module';
 import { FhirModule } from './modules/fhir/fhir.module';
+import { ChronicCareModule } from './modules/chronic-care/chronic-care.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { AuditModule } from './modules/audit/audit.module';
@@ -17,6 +18,7 @@ import databaseConfig from './config/database.config';
 import { RoleValidationMiddleware } from './common/middleware/role-validation.middleware';
 import { RateLimitingMiddleware } from './common/middleware/rate-limiting.middleware';
 import { AuditLoggingMiddleware } from './common/middleware/audit-logging.middleware';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -61,9 +63,11 @@ import { AuditLoggingMiddleware } from './common/middleware/audit-logging.middle
     AppointmentsModule,
     ClinicalRecordsModule,
     FhirModule,
+    ChronicCareModule,
     StorageModule,
     BillingModule,
     AuditModule,
+    UsersModule,
   ],
 })
 export class AppModule implements NestModule {

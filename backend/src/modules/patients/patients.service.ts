@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { Patient } from './patient.entity';
 import { SexType } from '../../common/enums/sex-type.enum';
 import { CreatePatientDto } from './dto/create-patient.dto';
-import { MockRenaperService } from './mock-renaper.service';
+import { MockRenaperService, RenaperIdentityData } from './mock-renaper.service';
 
 @Injectable()
 export class PatientsService {
@@ -16,7 +16,21 @@ export class PatientsService {
     @InjectRepository(Patient)
     private readonly patientRepo: Repository<Patient>,
     private readonly renaperService: MockRenaperService,
-  ) {}
+  ) { }
+
+  private shouldBypassPatientValidation(): boolean {
+    return process.env.DEV_BYPASS_PATIENT_IDENTITY_VALIDATION === 'true';
+  }
+
+  private getBypassIdentity(dni: string, sex: SexType): RenaperIdentityData {
+    return {
+      firstName: 'Paciente',
+      lastName: `DNI ${dni}`,
+      birthDate: '1990-01-01',
+      photoUrl: `https://via.placeholder.com/200x200.png?text=DNI+${dni}`,
+      verified: true,
+    };
+  }
 
   /**
    * Register a new patient.
@@ -38,8 +52,9 @@ export class PatientsService {
       );
     }
 
-    // Verify identity against RENAPER
-    const identity = await this.renaperService.lookup(dto.dni, dto.sex as SexType);
+    const identity = this.shouldBypassPatientValidation()
+      ? this.getBypassIdentity(dto.dni, dto.sex as SexType)
+      : await this.renaperService.lookup(dto.dni, dto.sex as SexType);
 
     const patient = this.patientRepo.create({
       ...dto,
@@ -74,6 +89,10 @@ export class PatientsService {
     dni: string,
     sex: SexType,
   ) {
+    if (this.shouldBypassPatientValidation()) {
+      return this.getBypassIdentity(dni, sex);
+    }
+
     return this.renaperService.lookup(dni, sex);
   }
 

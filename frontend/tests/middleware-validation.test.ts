@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const backendUrl = process.env.API_BASE_URL ?? 'http://localhost:4000';
+const testSlug = process.env.TEST_INDEPENDENT_SLUG ?? 'drfulano';
 
 test('Rate limiting: /v1/tenants/by-subdomain requests should be throttled', async () => {
-    const slugUrl = `${backendUrl}/v1/tenants/by-subdomain/drfulano`;
+    const slugUrl = `${backendUrl}/v1/tenants/by-subdomain/${testSlug}`;
 
     console.log('Testing rate limiting (20 requests per 60s)...');
 

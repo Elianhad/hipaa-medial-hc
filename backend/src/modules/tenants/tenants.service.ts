@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository, Between } from 'typeorm';
 import { Professional } from '../professionals/professional.entity';
-import { User } from '../professionals/user.entity';
+import { User } from '../../users/user.entity';
 import { Tenant, TenantStatus, TenantType } from './tenant.entity';
 import { TenantMembership } from './tenant-membership.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';

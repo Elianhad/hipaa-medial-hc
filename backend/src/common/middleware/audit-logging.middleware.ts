@@ -35,19 +35,20 @@ export class AuditLoggingMiddleware implements NestMiddleware {
     use(req: Request, res: Response, next: NextFunction) {
         const startTime = Date.now();
         const requestId = randomUUID();
+        const middleware = this;
 
         // Capture response
-        const originalSend = res.send;
-        res.send = function (data: any) {
+        const originalSend = res.send.bind(res);
+        res.send = ((data: any) => {
             const statusCode = res.statusCode;
             const path = req.path;
             const method = req.method;
-            const clientIp = this.getClientIp(req);
+            const clientIp = middleware.getClientIp(req);
 
             // Log dashboard access
             if (path.includes('/v1/dashboard')) {
                 const user = (req as any).user;
-                this.logAuditEvent({
+                middleware.logAuditEvent({
                     id: requestId,
                     timestamp: new Date().toISOString(),
                     userId: user?.sub,
@@ -68,7 +69,7 @@ export class AuditLoggingMiddleware implements NestMiddleware {
             // Log auth attempts
             if (path.includes('/auth')) {
                 const user = (req as any).user;
-                this.logAuditEvent({
+                middleware.logAuditEvent({
                     id: requestId,
                     timestamp: new Date().toISOString(),
                     userId: user?.sub,
@@ -88,7 +89,7 @@ export class AuditLoggingMiddleware implements NestMiddleware {
             // Log role validation failures
             if (statusCode === 403 && path.includes('/dashboard')) {
                 const user = (req as any).user;
-                this.logAuditEvent({
+                middleware.logAuditEvent({
                     id: requestId,
                     timestamp: new Date().toISOString(),
                     userId: user?.sub,
@@ -100,14 +101,13 @@ export class AuditLoggingMiddleware implements NestMiddleware {
                     clientIp,
                     userAgent: req.headers['user-agent'],
                     details: {
-                        roles: this.extractRoles((req as any).user),
+                        roles: middleware.extractRoles((req as any).user),
                     },
                 });
             }
 
-            res.send = originalSend;
-            return originalSend.call(this, data);
-        }.bind(this);
+            return originalSend(data);
+        }) as Response['send'];
 
         next();
     }

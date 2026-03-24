@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Professional } from '../professionals/professional.entity';
-import { User } from '../professionals/user.entity';
+import { User } from '../../users/user.entity';
 import { Tenant } from './tenant.entity';
 import { TenantMembership } from './tenant-membership.entity';
 import { TenantsService } from './tenants.service';

@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { OrganizationPortalGuard } from '../../../../components/OrganizationPortalGuard';
 import {
     getOrgStaff,
-    DEMO_ORG_STAFF,
     type OrgStaffMember,
 } from '@/lib/organization-api';
 
@@ -14,9 +13,10 @@ const roleLabels: Record<string, string> = {
 };
 
 export default function OrgStaffPage() {
-    const [staff, setStaff] = useState<OrgStaffMember[]>(DEMO_ORG_STAFF);
+    const [staff, setStaff] = useState<OrgStaffMember[]>([]);
     const [isApiConnected, setIsApiConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadStaff = async () => {
@@ -24,8 +24,10 @@ export default function OrgStaffPage() {
                 const data = await getOrgStaff();
                 setStaff(data.items);
                 setIsApiConnected(true);
-            } catch {
+                setLoadError(null);
+            } catch (error: any) {
                 setIsApiConnected(false);
+                setLoadError(error?.message ?? 'No se pudo conectar con backend.');
             } finally {
                 setIsLoading(false);
             }
@@ -51,10 +53,10 @@ export default function OrgStaffPage() {
                         </button>
                     </header>
 
-                    {/* Demo mode banner */}
+                    {/* Backend connectivity banner */}
                     {!isApiConnected && !isLoading && (
-                        <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
-                            👥 Mostrando staff demo. Al habilitar Auth0/API se sincroniza automáticamente.
+                        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800">
+                            No se pudo cargar staff en vivo. {loadError ?? 'Revisá tenant/autenticación y backend.'}
                         </div>
                     )}
 

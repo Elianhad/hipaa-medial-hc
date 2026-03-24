@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth0 } from './lib/auth0';
 
 /**
- * Multi-tenant subdomain routing middleware.
- *
- * In production:
- *   drfulano.app.com  → professional tenant for slug "drfulano"
- *   clinica.app.com   → organization tenant for slug "clinica"
+ * Middleware composes two concerns:
+ * 1. Auth0 session management — auto-mounts /auth/* routes and handles cookies.
+ * 2. Multi-tenant subdomain routing — rewrites tenant subdomains to /tenant/<slug>/...
  *
  * In local dev (localhost / 127.0.0.1) subdomains don't resolve, so
  * the ?tenant=<slug>&tenantType=professional|org query params are used
@@ -14,41 +13,37 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000';
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
+    // Always run Auth0 middleware first so session cookies are set/read correctly.
+    const authResponse = await auth0.middleware(req);
+
     const url = req.nextUrl.clone();
     const hostname = req.headers.get('host') ?? '';
-
-    // Strip "www." prefix
     const host = hostname.replace(/^www\./, '');
 
-    // Already on the root domain — no rewriting needed
+    // On the root domain or localhost — no subdomain rewrite needed.
     if (host === ROOT_DOMAIN || host.startsWith('localhost')) {
-        return NextResponse.next();
+        return authResponse;
     }
 
-    // Extract subdomain:  "drfulano.app.com" → "drfulano"
+    // Extract subdomain:  "profesional-x.app.com" → "profesional-x"
     const subdomain = host.split('.')[0];
-    if (!subdomain) return NextResponse.next();
+    if (!subdomain) return authResponse;
 
-    // The tenant type hint is stored in the subdomain registry on the
-    // backend.  Until we can look it up cheaply in middleware, we route
-    // all tenant subdomains to a unified tenant entry-point that resolves
-    // the type server-side.
-    //
-    // Rewrite:  drfulano.app.com/<path>  →  /tenant/drfulano/<path>
+    // Rewrite:  profesional-x.app.com/<path>  →  /tenant/profesional-x/<path>
     url.pathname = `/tenant/${subdomain}${url.pathname}`;
-    return NextResponse.rewrite(url);
+    const rewriteResponse = NextResponse.rewrite(url);
+
+    // Forward Auth0 session headers/cookies to the rewrite response.
+    authResponse.headers.forEach((value, key) => {
+        rewriteResponse.headers.set(key, value);
+    });
+
+    return rewriteResponse;
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths EXCEPT:
-         * - _next/static (static files)
-         * - _next/image  (image optimisation)
-         * - favicon.ico
-         * - public assets
-         */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

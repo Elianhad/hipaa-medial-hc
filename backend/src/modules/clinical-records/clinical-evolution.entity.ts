@@ -86,6 +86,50 @@ export class ClinicalEvolution {
   @Column({ name: 'fhir_observation_id', nullable: true })
   fhirObservationId: string;
 
+  @Column({ name: 'fhir_clinical_impression_id', nullable: true })
+  fhirClinicalImpressionId: string;
+
+  /** Whether this was a fast-track (routine control or decompensation) evolution */
+  @Column({ name: 'is_fast_track', default: false })
+  isFastTrack: boolean;
+
+  @Column({ name: 'is_decompensation', default: false })
+  isDecompensation: boolean;
+
+  /** 'full_soap' | 'routine_control' | 'decompensation' */
+  @Column({ name: 'fast_track_mode', nullable: true, length: 30 })
+  fastTrackMode: string;
+
+  /** Auto-generated assessment suggestion from goal comparison */
+  @Column({ name: 'auto_assessment', type: 'text', nullable: true })
+  autoAssessment: string;
+
+  /** Trend label from migration 003/004 */
+  @Column({ nullable: true, length: 20 })
+  trend: string;
+
+  /** Computed trend score from migration 004 (persisted column inserted by DB) */
+  @Column({ name: 'trend_score', type: 'smallint', nullable: true, insert: false, update: false })
+  trendScore: number;
+
+  @Column({ name: 'signed_at', type: 'timestamptz', nullable: true })
+  signedAt: Date;
+
+  @Column({ name: 'signed_by', type: 'uuid', nullable: true })
+  signedBy: string;
+
+  @Column({ name: 'signature_hash', length: 128, nullable: true })
+  signatureHash: string;
+
+  @Column({ name: 'signature_provider', length: 30, nullable: true, default: 'local_hash' })
+  signatureProvider: string;
+
+  @Column({ name: 'pfdr_transaction_id', length: 120, nullable: true })
+  pfdrTransactionId: string;
+
+  @Column({ name: 'is_locked', default: false })
+  isLocked: boolean;
+
   @Column({ name: 'created_by', type: 'uuid' })
   createdBy: string;
 

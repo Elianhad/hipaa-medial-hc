@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useUser } from '@/components/DemoSessionProvider';
+import { useUser } from '@/components/SessionProvider';
 
 export function Navbar() {
     const { user, isLoading } = useUser();
-    const logoutHref = '/api/logout?returnTo=/';
+    const logoutHref = '/auth/logout';
+    const needsRegistration = Boolean(user?.appState?.registration?.needsRegistration);
 
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/10">
@@ -46,6 +47,14 @@ export function Navbar() {
                                     >
                                         Mi Dashboard
                                     </Link>
+                                    {needsRegistration && (
+                                        <Link
+                                            href="/new-tenant"
+                                            className="text-sm px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition"
+                                        >
+                                            Completar alta
+                                        </Link>
+                                    )}
                                     <a
                                         href={logoutHref}
                                         className="text-sm px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"

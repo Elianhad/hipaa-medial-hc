@@ -50,7 +50,7 @@ async function bootstrap() {
   // Swagger (disabled in production)
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('HIPAA HCE API')
+      .setTitle('HEED HCE API')
       .setDescription('Multi-tenant Electronic Health Record platform')
       .setVersion('1.0')
       .addBearerAuth()
@@ -60,7 +60,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = process.env.PORT ?? 3001;
+  const port = process.env.PORT ?? 4001;
   await app.listen(port);
   console.log(`🚀 Backend running on port ${port}`);
 }

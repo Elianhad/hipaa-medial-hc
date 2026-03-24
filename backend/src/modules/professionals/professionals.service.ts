@@ -23,11 +23,14 @@ export class ProfessionalsService {
    * Register a new professional.
    *
    * Steps:
-   *  1. Calls MockSisaService to verify the license number (matrícula) against SISA.
-   *  2. Checks that the license status is ACTIVO — rejects SUSPENDIDO / INACTIVO.
-   *  3. Auto-fills: firstName, lastName, specialty, professionalType from SISA data.
-   *  4. Marks sisaVerified = true.
-   *  5. Persists the professional record.
+    *  1. By default, calls MockSisaService to verify the license number (matrícula) against SISA.
+    *  2. Checks that the license status is ACTIVO — rejects SUSPENDIDO / INACTIVO.
+    *  3. Auto-fills: firstName, lastName, specialty, professionalType from SISA data.
+    *  4. Marks professionalIdValidated = true when verification succeeds.
+    *
+    * Development mode:
+    *  - If DEV_BYPASS_PROFESSIONAL_ID_VALIDATION=true, SISA verification is skipped
+    *    and professionalIdValidated is forced to true so onboarding/testing is not blocked.
    */
   async create(dto: CreateProfessionalDto): Promise<Professional> {
     const existing = await this.professionalRepo.findOne({
@@ -38,6 +41,17 @@ export class ProfessionalsService {
       throw new ConflictException(
         `Ya existe un profesional registrado con la matrícula ${dto.licenseNumber}`,
       );
+    }
+
+    if (this.shouldBypassProfessionalValidation()) {
+      const professional = this.professionalRepo.create({
+        ...dto,
+        specialty: dto.specialty ?? 'Pendiente de validacion SISA',
+        professionalType: dto.professionalType ?? 'Profesional de salud',
+        professionalIdValidated: true,
+      });
+
+      return this.professionalRepo.save(professional);
     }
 
     // Verify license against SISA
@@ -54,7 +68,7 @@ export class ProfessionalsService {
       ...dto,
       specialty: licenseData.specialty,
       professionalType: licenseData.professionalType,
-      sisaVerified: licenseData.verified,
+      professionalIdValidated: licenseData.verified,
     });
 
     return this.professionalRepo.save(professional);
@@ -85,7 +99,22 @@ export class ProfessionalsService {
    * Used by the frontend to auto-fill and lock license fields.
    */
   async verifyLicense(licenseNumber: string) {
+    if (this.shouldBypassProfessionalValidation()) {
+      return {
+        firstName: 'Dev',
+        lastName: 'Bypass',
+        specialty: 'Validacion omitida en desarrollo',
+        professionalType: 'Profesional de salud',
+        licenseStatus: 'ACTIVO' as const,
+        verified: true,
+      };
+    }
+
     return this.sisaService.lookup(licenseNumber);
+  }
+
+  private shouldBypassProfessionalValidation(): boolean {
+    return process.env.DEV_BYPASS_PROFESSIONAL_ID_VALIDATION === 'true';
   }
 
   async findAll(page = 1, limit = 20) {

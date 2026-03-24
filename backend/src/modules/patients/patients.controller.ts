@@ -15,15 +15,18 @@ import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { PatientsService } from './patients.service';
 import { CreatePatientDto } from './dto/create-patient.dto';
 import { SexType } from '../../common/enums/sex-type.enum';
+import { PermissionsGuard } from '../../common/guards/permissions.guard';
+import { Permissions } from '../../common/decorators/permissions.decorator';
 
 @ApiTags('patients')
 @ApiBearerAuth()
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), PermissionsGuard)
 @Controller('patients')
 export class PatientsController {
-  constructor(private readonly patientsService: PatientsService) {}
+  constructor(private readonly patientsService: PatientsService) { }
 
   @ApiOperation({ summary: 'List all patients (paginated)' })
+  @Permissions('patients:read')
   @Get()
   findAll(
     @Query('page') page = '1',
@@ -33,6 +36,7 @@ export class PatientsController {
   }
 
   @ApiOperation({ summary: 'Get patient by ID' })
+  @Permissions('patients:read')
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.patientsService.findById(id);
@@ -50,6 +54,7 @@ export class PatientsController {
   }
 
   @ApiOperation({ summary: 'Register a new patient' })
+  @Permissions('patients:write')
   @Post()
   create(@Body() dto: CreatePatientDto) {
     return this.patientsService.create(dto);
@@ -58,6 +63,7 @@ export class PatientsController {
   @ApiOperation({
     summary: 'Update patient contact/insurance data (locked identity fields excluded)',
   })
+  @Permissions('patients:write')
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,

@@ -6,6 +6,7 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { resolveCanonicalUserRole } from '../auth/role-claims';
 
 /**
  * TenantMiddleware
@@ -21,12 +22,14 @@ import { DataSource } from 'typeorm';
  */
 @Injectable()
 export class TenantMiddleware implements NestMiddleware {
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+  constructor(@InjectDataSource() private readonly dataSource: DataSource) { }
 
   async use(req: Request & { user?: any }, _res: Response, next: NextFunction) {
     // Resolve tenant from subdomain  (e.g. "clinica" from clinica.miapp.com)
     const subdomain = this.extractSubdomain(req.hostname);
     const tenantIdHeader = req.headers['x-tenant-id'] as string | undefined;
+
+    console.log(`TenantMiddleware: user ${req.user.sub}`);
 
     const tenantIdentifier = subdomain ?? tenantIdHeader;
     if (!tenantIdentifier) {
@@ -46,7 +49,7 @@ export class TenantMiddleware implements NestMiddleware {
 
     const tenantId: string = result[0].id;
     const auth0Sub: string = req.user?.sub ?? '';
-    const userRole: string = req.user?.['https://hipaa-hce/role'] ?? '';
+    const userRole = resolveCanonicalUserRole(req.user);
 
     // Set PostgreSQL session variables for RLS
     await this.dataSource.query(`

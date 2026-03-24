@@ -3,6 +3,28 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
+export type FhirProblemClinicalStatus =
+  | 'active'
+  | 'resolved'
+  | 'inactive'
+  | 'recurrent';
+
+export type FhirProblemCategory = 'acute' | 'chronic' | 'symptomatic';
+
+export type FhirEvolutionTrend =
+  | 'improving'
+  | 'stable'
+  | 'worsening'
+  | 'resolution';
+
+export type FhirOrderType = 'medication' | 'laboratory' | 'imaging';
+
+export type FhirOrderStatus =
+  | 'draft'
+  | 'active'
+  | 'completed'
+  | 'cancelled';
+
 export interface FhirPatientInput {
   patientId: string;
   dni: string;
@@ -12,6 +34,26 @@ export interface FhirPatientInput {
   sex: 'male' | 'female' | 'other' | 'unknown';
   email?: string;
   phone?: string;
+}
+
+export interface FhirProblemInput {
+  patientFhirId: string;
+  practitionerFhirId?: string;
+  encounterId?: string;
+  tenantId: string;
+  title: string;
+  clinicalStatus: FhirProblemClinicalStatus;
+  category?: FhirProblemCategory;
+  onsetDate?: string;
+  abatementDate?: string;
+  closureSummary?: string;
+  verificationStatus?: 'provisional' | 'differential' | 'confirmed' | 'refuted';
+  snomedCode?: string;
+  snomedDisplay?: string;
+  icd10Code?: string;
+  icd10Display?: string;
+  icd11Code?: string;
+  icd11Display?: string;
 }
 
 export interface FhirEvolutionInput {
@@ -24,9 +66,34 @@ export interface FhirEvolutionInput {
   objective?: string;
   assessment?: string;
   plan?: string;
+  trend?: FhirEvolutionTrend;
+  problemTitle?: string;
+  problemFhirId?: string;
+  snomedCode?: string;
+  snomedDisplay?: string;
   icd10Code?: string;
   icd10Display?: string;
+  icd11Code?: string;
+  icd11Display?: string;
+  problemClinicalStatus?: FhirProblemClinicalStatus;
+}
+
+export interface FhirOrderInput {
+  orderId: string;
+  patientFhirId: string;
+  practitionerFhirId: string;
+  encounterId?: string;
   problemFhirId?: string;
+  tenantId: string;
+  authoredOn: string;
+  type: FhirOrderType;
+  status?: FhirOrderStatus;
+  detail: string;
+  medicationCode?: string;
+  medicationDisplay?: string;
+  serviceCode?: string;
+  serviceDisplay?: string;
+  note?: string;
 }
 
 /**
@@ -37,9 +104,11 @@ export interface FhirEvolutionInput {
  *
  * Key resources managed:
  *  - Patient
- *  - Encounter (maps to a clinical evolution session)
- *  - Condition (maps to a diagnosed problem)
- *  - Observation (maps to SOAP notes / clinical findings)
+ *  - Condition (problem thread)
+ *  - Encounter (consultation context)
+ *  - ClinicalImpression (clinical synthesis per evolution)
+ *  - Observation (targeted findings + trend)
+ *  - MedicationRequest / ServiceRequest (orders)
  */
 @Injectable()
 export class FhirService {
@@ -56,14 +125,9 @@ export class FhirService {
     ) ?? '';
     this.baseUrl =
       this.configService.get<string>('AWS_HEALTHLAKE_ENDPOINT') ??
-      `https://healthlake.${
-        this.configService.get<string>('AWS_REGION') ?? 'us-east-1'
+      `https://healthlake.${this.configService.get<string>('AWS_REGION') ?? 'us-east-1'
       }.amazonaws.com/datastore/${this.datastoreId}/r4`;
   }
-
-  // -------------------------------------------------------------------
-  // Patient resource
-  // -------------------------------------------------------------------
 
   async upsertPatient(input: FhirPatientInput): Promise<string> {
     const resource = this.buildPatientResource(input);
@@ -75,46 +139,69 @@ export class FhirService {
     return response.id;
   }
 
-  // -------------------------------------------------------------------
-  // Clinical evolution → Encounter + Condition + Observation
-  // -------------------------------------------------------------------
+  async upsertProblem(input: FhirProblemInput, resourceId?: string): Promise<string> {
+    const path = resourceId ? `/Condition/${resourceId}` : '/Condition';
+    const method = resourceId ? 'PUT' : 'POST';
+    const response = await this.request<{ id: string }>(
+      method,
+      path,
+      this.buildProblemConditionResource(input, resourceId),
+    );
+    return response.id;
+  }
 
-  /**
-   * Persist a clinical evolution to AWS HealthLake.
-   *
-   * Creates/updates:
-   *  - An Encounter resource (the consultation session)
-   *  - A Condition resource (the diagnosis / assessment)
-   *  - Observation resources (one per SOAP section with content)
-   *
-   * Returns the created FHIR resource IDs.
-   */
   async createEvolution(input: FhirEvolutionInput): Promise<{
     encounterId: string;
     conditionId?: string;
+    clinicalImpressionId?: string;
     observationIds: string[];
   }> {
-    // 1. Create Encounter
     const encounter = await this.request<{ id: string }>(
       'POST',
       '/Encounter',
       this.buildEncounterResource(input),
     );
 
-    // 2. Create Condition (if assessment contains an ICD-10 code)
-    let conditionId: string | undefined;
-    if (input.icd10Code || input.assessment) {
-      const condition = await this.request<{ id: string }>(
-        'POST',
-        '/Condition',
-        this.buildConditionResource(input, encounter.id),
-      );
-      conditionId = condition.id;
+    let conditionId = input.problemFhirId;
+    if (!conditionId && (input.problemTitle || input.icd10Code || input.snomedCode || input.icd11Code)) {
+      conditionId = (
+        await this.request<{ id: string }>(
+          'POST',
+          '/Condition',
+          this.buildProblemConditionResource({
+            patientFhirId: input.patientFhirId,
+            practitionerFhirId: input.practitionerFhirId,
+            encounterId: encounter.id,
+            tenantId: input.tenantId,
+            title: input.problemTitle ?? input.assessment ?? 'Problema en evaluación',
+            clinicalStatus: input.problemClinicalStatus ?? 'active',
+            snomedCode: input.snomedCode,
+            snomedDisplay: input.snomedDisplay,
+            icd10Code: input.icd10Code,
+            icd10Display: input.icd10Display,
+            icd11Code: input.icd11Code,
+            icd11Display: input.icd11Display,
+          }),
+        )
+      ).id;
     }
 
-    // 3. Create Observations for each SOAP section
+    let clinicalImpressionId: string | undefined;
+    if (input.subjective || input.objective || input.assessment || input.plan || input.trend) {
+      clinicalImpressionId = (
+        await this.request<{ id: string }>(
+          'POST',
+          '/ClinicalImpression',
+          this.buildClinicalImpressionResource(
+            { ...input, problemFhirId: conditionId ?? input.problemFhirId },
+            encounter.id,
+          ),
+        )
+      ).id;
+    }
+
     const observationIds: string[] = [];
-    const soapSections: { code: string; display: string; value: string | undefined }[] = [
+    const soapSections: Array<{ code: string; display: string; value: string | undefined }> = [
       {
         code: '11336-5',
         display: 'History of chief complaint Narrative',
@@ -139,24 +226,77 @@ export class FhirService {
 
     for (const section of soapSections) {
       if (!section.value) continue;
-      const obs = await this.request<{ id: string }>(
+      const observation = await this.request<{ id: string }>(
         'POST',
         '/Observation',
-        this.buildObservationResource(input, encounter.id, section),
+        this.buildObservationResource(
+          { ...input, problemFhirId: conditionId ?? input.problemFhirId },
+          encounter.id,
+          section,
+        ),
       );
-      observationIds.push(obs.id);
+      observationIds.push(observation.id);
     }
 
-    return { encounterId: encounter.id, conditionId, observationIds };
+    if (input.trend) {
+      const trendObservation = await this.request<{ id: string }>(
+        'POST',
+        '/Observation',
+        this.buildTrendObservationResource(
+          { ...input, problemFhirId: conditionId ?? input.problemFhirId },
+          encounter.id,
+        ),
+      );
+      observationIds.push(trendObservation.id);
+    }
+
+    return {
+      encounterId: encounter.id,
+      conditionId,
+      clinicalImpressionId,
+      observationIds,
+    };
+  }
+
+  async createOrder(input: FhirOrderInput): Promise<{ id: string; resourceType: string }> {
+    const resource = this.buildOrderResource(input);
+    const endpoint = resource.resourceType === 'MedicationRequest'
+      ? '/MedicationRequest'
+      : '/ServiceRequest';
+    const response = await this.request<{ id: string }>('POST', endpoint, resource);
+    return { id: response.id, resourceType: resource.resourceType };
   }
 
   async getResource(resourceType: string, resourceId: string) {
     return this.request<any>('GET', `/${resourceType}/${resourceId}`);
   }
 
-  // -------------------------------------------------------------------
-  // FHIR Resource builders
-  // -------------------------------------------------------------------
+  mapProblemStatusToConditionClinicalStatus(status: FhirProblemClinicalStatus) {
+    const code = status === 'recurrent' ? 'recurrence' : status;
+    return {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+          code,
+        },
+      ],
+    };
+  }
+
+  mapTrendToScore(trend?: FhirEvolutionTrend): number | undefined {
+    switch (trend) {
+      case 'worsening':
+        return -1;
+      case 'stable':
+        return 0;
+      case 'improving':
+        return 1;
+      case 'resolution':
+        return 2;
+      default:
+        return undefined;
+    }
+  }
 
   buildPatientResource(input: FhirPatientInput) {
     return {
@@ -168,7 +308,7 @@ export class FhirService {
       identifier: [
         {
           use: 'official',
-          system: 'urn:oid:2.16.840.1.113883.4.330.32',  // Argentina DNI OID
+          system: 'urn:oid:2.16.840.1.113883.4.330.32',
           value: input.dni,
         },
       ],
@@ -182,12 +322,8 @@ export class FhirService {
       gender: input.sex,
       birthDate: input.birthDate,
       telecom: [
-        ...(input.email
-          ? [{ system: 'email', value: input.email, use: 'home' }]
-          : []),
-        ...(input.phone
-          ? [{ system: 'phone', value: input.phone, use: 'mobile' }]
-          : []),
+        ...(input.email ? [{ system: 'email', value: input.email, use: 'home' }] : []),
+        ...(input.phone ? [{ system: 'phone', value: input.phone, use: 'mobile' }] : []),
       ],
     };
   }
@@ -215,6 +351,15 @@ export class FhirService {
         start: input.evolutionDate,
         end: input.evolutionDate,
       },
+      diagnosis: input.problemFhirId
+        ? [
+          {
+            condition: {
+              reference: `Condition/${input.problemFhirId}`,
+            },
+          },
+        ]
+        : undefined,
       meta: {
         tag: [
           {
@@ -226,56 +371,115 @@ export class FhirService {
     };
   }
 
-  buildConditionResource(
-    input: FhirEvolutionInput,
-    encounterId: string,
-  ) {
+  buildProblemConditionResource(input: FhirProblemInput, resourceId?: string) {
+    const codings = this.buildProblemCodings(input);
+
     return {
       resourceType: 'Condition',
-      clinicalStatus: {
-        coding: [
-          {
-            system:
-              'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            code: 'active',
-          },
-        ],
-      },
+      ...(resourceId ? { id: resourceId } : {}),
+      clinicalStatus: this.mapProblemStatusToConditionClinicalStatus(input.clinicalStatus),
       verificationStatus: {
         coding: [
           {
-            system:
-              'http://terminology.hl7.org/CodeSystem/condition-ver-status',
-            code: 'confirmed',
+            system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status',
+            code: input.verificationStatus ?? 'confirmed',
           },
         ],
       },
+      category: [
+        {
+          coding: [
+            {
+              system: 'https://hipaa-hce/fhir/CodeSystem/problem-category',
+              code: input.category ?? 'symptomatic',
+            },
+          ],
+          text: input.category ?? 'symptomatic',
+        },
+      ],
       code: {
-        coding: input.icd10Code
-          ? [
-              {
-                system: 'http://hl7.org/fhir/sid/icd-10',
-                code: input.icd10Code,
-                display: input.icd10Display ?? input.assessment,
-              },
-            ]
-          : [],
-        text: input.assessment,
+        coding: codings,
+        text: input.title,
       },
+      subject: {
+        reference: `Patient/${input.patientFhirId}`,
+      },
+      encounter: input.encounterId
+        ? {
+          reference: `Encounter/${input.encounterId}`,
+        }
+        : undefined,
+      recorder: input.practitionerFhirId
+        ? {
+          reference: `Practitioner/${input.practitionerFhirId}`,
+        }
+        : undefined,
+      onsetDateTime: input.onsetDate,
+      abatementDateTime: input.abatementDate,
+      note: input.closureSummary
+        ? [{ text: input.closureSummary }]
+        : undefined,
+      meta: {
+        tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
+      },
+    };
+  }
+
+  buildConditionResource(input: FhirEvolutionInput, encounterId: string) {
+    return this.buildProblemConditionResource({
+      patientFhirId: input.patientFhirId,
+      practitionerFhirId: input.practitionerFhirId,
+      encounterId,
+      tenantId: input.tenantId,
+      title: input.problemTitle ?? input.assessment ?? 'Problema en evaluación',
+      clinicalStatus: input.problemClinicalStatus ?? 'active',
+      snomedCode: input.snomedCode,
+      snomedDisplay: input.snomedDisplay,
+      icd10Code: input.icd10Code,
+      icd10Display: input.icd10Display,
+      icd11Code: input.icd11Code,
+      icd11Display: input.icd11Display,
+    });
+  }
+
+  buildClinicalImpressionResource(input: FhirEvolutionInput, encounterId: string) {
+    return {
+      resourceType: 'ClinicalImpression',
+      status: 'completed',
+      description: input.subjective,
+      summary: input.assessment ?? input.problemTitle,
       subject: {
         reference: `Patient/${input.patientFhirId}`,
       },
       encounter: {
         reference: `Encounter/${encounterId}`,
       },
-      ...(input.problemFhirId && {
-        extension: [
-          {
-            url: 'https://hipaa-hce/fhir/extension/problem-reference',
-            valueReference: { reference: `Condition/${input.problemFhirId}` },
-          },
-        ],
-      }),
+      effectiveDateTime: input.evolutionDate,
+      assessor: {
+        reference: `Practitioner/${input.practitionerFhirId}`,
+      },
+      problem: input.problemFhirId
+        ? [{ reference: `Condition/${input.problemFhirId}` }]
+        : undefined,
+      finding: [
+        ...(input.objective
+          ? [
+            {
+              itemCodeableConcept: { text: 'Hallazgos objetivos' },
+              basis: input.objective,
+            },
+          ]
+          : []),
+        ...(input.plan
+          ? [
+            {
+              itemCodeableConcept: { text: 'Plan de acción' },
+              basis: input.plan,
+            },
+          ]
+          : []),
+      ],
+      note: input.trend ? [{ text: `Trend: ${input.trend}` }] : undefined,
       meta: {
         tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
       },
@@ -294,8 +498,7 @@ export class FhirService {
         {
           coding: [
             {
-              system:
-                'http://terminology.hl7.org/CodeSystem/observation-category',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
               code: 'exam',
               display: 'Exam',
             },
@@ -318,10 +521,11 @@ export class FhirService {
       encounter: {
         reference: `Encounter/${encounterId}`,
       },
+      focus: input.problemFhirId
+        ? [{ reference: `Condition/${input.problemFhirId}` }]
+        : undefined,
       effectiveDateTime: input.evolutionDate,
-      performer: [
-        { reference: `Practitioner/${input.practitionerFhirId}` },
-      ],
+      performer: [{ reference: `Practitioner/${input.practitionerFhirId}` }],
       valueString: section.value,
       meta: {
         tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
@@ -329,9 +533,228 @@ export class FhirService {
     };
   }
 
-  // -------------------------------------------------------------------
-  // HTTP helper (AWS HealthLake requires AWS Sig V4)
-  // -------------------------------------------------------------------
+  buildTrendObservationResource(input: FhirEvolutionInput, encounterId: string) {
+    const score = this.mapTrendToScore(input.trend);
+
+    return {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'survey',
+              display: 'Survey',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: 'https://hipaa-hce/fhir/CodeSystem/evolution-trend',
+            code: 'problem-trend',
+            display: 'Problem evolution trend',
+          },
+        ],
+        text: 'Problem evolution trend',
+      },
+      subject: {
+        reference: `Patient/${input.patientFhirId}`,
+      },
+      encounter: {
+        reference: `Encounter/${encounterId}`,
+      },
+      focus: input.problemFhirId
+        ? [{ reference: `Condition/${input.problemFhirId}` }]
+        : undefined,
+      effectiveDateTime: input.evolutionDate,
+      valueCodeableConcept: input.trend
+        ? {
+          coding: [
+            {
+              system: 'https://hipaa-hce/fhir/CodeSystem/evolution-trend',
+              code: input.trend,
+              display: input.trend,
+            },
+          ],
+          text: input.trend,
+        }
+        : undefined,
+      component: score === undefined
+        ? undefined
+        : [
+          {
+            code: {
+              coding: [
+                {
+                  system: 'https://hipaa-hce/fhir/CodeSystem/evolution-trend',
+                  code: 'trend-score',
+                  display: 'Trend score',
+                },
+              ],
+              text: 'Trend score',
+            },
+            valueInteger: score,
+          },
+        ],
+      performer: [{ reference: `Practitioner/${input.practitionerFhirId}` }],
+      meta: {
+        tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
+      },
+    };
+  }
+
+  buildOrderResource(input: FhirOrderInput) {
+    return input.type === 'medication'
+      ? this.buildMedicationRequestResource(input)
+      : this.buildServiceRequestResource(input);
+  }
+
+  buildMedicationRequestResource(input: FhirOrderInput) {
+    return {
+      resourceType: 'MedicationRequest',
+      identifier: [
+        {
+          system: 'https://hipaa-hce/orders',
+          value: input.orderId,
+        },
+      ],
+      status: input.status ?? 'active',
+      intent: 'order',
+      subject: {
+        reference: `Patient/${input.patientFhirId}`,
+      },
+      encounter: input.encounterId
+        ? {
+          reference: `Encounter/${input.encounterId}`,
+        }
+        : undefined,
+      medicationCodeableConcept: {
+        coding: input.medicationCode
+          ? [
+            {
+              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              code: input.medicationCode,
+              display: input.medicationDisplay ?? input.detail,
+            },
+          ]
+          : [],
+        text: input.medicationDisplay ?? input.detail,
+      },
+      authoredOn: input.authoredOn,
+      requester: {
+        reference: `Practitioner/${input.practitionerFhirId}`,
+      },
+      reasonReference: input.problemFhirId
+        ? [{ reference: `Condition/${input.problemFhirId}` }]
+        : undefined,
+      note: input.note ? [{ text: input.note }] : undefined,
+      meta: {
+        tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
+      },
+    };
+  }
+
+  buildServiceRequestResource(input: FhirOrderInput) {
+    return {
+      resourceType: 'ServiceRequest',
+      identifier: [
+        {
+          system: 'https://hipaa-hce/orders',
+          value: input.orderId,
+        },
+      ],
+      status: input.status ?? 'active',
+      intent: 'order',
+      category: [
+        {
+          coding: [
+            {
+              system: 'https://hipaa-hce/fhir/CodeSystem/order-type',
+              code: input.type,
+              display: input.type,
+            },
+          ],
+          text: input.type,
+        },
+      ],
+      code: {
+        coding: input.serviceCode
+          ? [
+            {
+              system: 'http://loinc.org',
+              code: input.serviceCode,
+              display: input.serviceDisplay ?? input.detail,
+            },
+          ]
+          : [],
+        text: input.serviceDisplay ?? input.detail,
+      },
+      subject: {
+        reference: `Patient/${input.patientFhirId}`,
+      },
+      encounter: input.encounterId
+        ? {
+          reference: `Encounter/${input.encounterId}`,
+        }
+        : undefined,
+      authoredOn: input.authoredOn,
+      requester: {
+        reference: `Practitioner/${input.practitionerFhirId}`,
+      },
+      reasonReference: input.problemFhirId
+        ? [{ reference: `Condition/${input.problemFhirId}` }]
+        : undefined,
+      note: input.note ? [{ text: input.note }] : undefined,
+      meta: {
+        tag: [{ system: 'https://hipaa-hce/tenant', code: input.tenantId }],
+      },
+    };
+  }
+
+  private buildProblemCodings(
+    input: Pick<
+      FhirProblemInput,
+      | 'snomedCode'
+      | 'snomedDisplay'
+      | 'icd10Code'
+      | 'icd10Display'
+      | 'icd11Code'
+      | 'icd11Display'
+    >,
+  ) {
+    return [
+      ...(input.snomedCode
+        ? [
+          {
+            system: 'http://snomed.info/sct',
+            code: input.snomedCode,
+            display: input.snomedDisplay,
+          },
+        ]
+        : []),
+      ...(input.icd10Code
+        ? [
+          {
+            system: 'http://hl7.org/fhir/sid/icd-10',
+            code: input.icd10Code,
+            display: input.icd10Display,
+          },
+        ]
+        : []),
+      ...(input.icd11Code
+        ? [
+          {
+            system: 'http://id.who.int/icd/release/11/mms',
+            code: input.icd11Code,
+            display: input.icd11Display,
+          },
+        ]
+        : []),
+    ];
+  }
 
   private async request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
@@ -350,7 +773,6 @@ export class FhirService {
             'Content-Type': 'application/fhir+json',
             Accept: 'application/fhir+json',
           },
-          // In production, add AWS Signature V4 interceptor (aws4 / @aws-sdk)
         }),
       );
       return (response as any).data;

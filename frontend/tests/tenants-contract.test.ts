@@ -2,9 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const backendUrl = process.env.API_BASE_URL ?? 'http://localhost:4000/v1';
+const independentSlug = process.env.TEST_INDEPENDENT_SLUG ?? 'drfulano';
+const organizationSlug = process.env.TEST_ORGANIZATION_SLUG ?? 'clinica-demo';
 
 test('GET /tenants/by-subdomain/:slug should return independent tenant shape', async () => {
-    const response = await fetch(`${backendUrl}/tenants/by-subdomain/drfulano`);
+    const response = await fetch(`${backendUrl}/tenants/by-subdomain/${independentSlug}`);
 
     assert.equal(response.ok, true, `Expected 2xx, got ${response.status}`);
 
@@ -13,7 +15,7 @@ test('GET /tenants/by-subdomain/:slug should return independent tenant shape', a
     // Required fields for independent tenants
     assert.ok(data.id, 'Should have id');
     assert.ok(data.type === 'independent', 'Should have type=independent');
-    assert.ok(data.subdomain === 'drfulano', 'Should have subdomain');
+    assert.ok(data.subdomain === independentSlug, 'Should have subdomain');
     assert.ok(data.tenantName, 'Should have tenantName');
 
     // Professional-specific enrichment fields
@@ -28,7 +30,7 @@ test('GET /tenants/by-subdomain/:slug should return independent tenant shape', a
 });
 
 test('GET /tenants/by-subdomain/:slug should return organization tenant shape', async () => {
-    const response = await fetch(`${backendUrl}/tenants/by-subdomain/clinica-demo`);
+    const response = await fetch(`${backendUrl}/tenants/by-subdomain/${organizationSlug}`);
 
     assert.equal(response.ok, true, `Expected 2xx, got ${response.status}`);
 
@@ -37,7 +39,7 @@ test('GET /tenants/by-subdomain/:slug should return organization tenant shape', 
     // Required fields for organization tenants
     assert.ok(data.id, 'Should have id');
     assert.ok(data.type === 'organization', 'Should have type=organization');
-    assert.ok(data.subdomain === 'clinica-demo', 'Should have subdomain');
+    assert.ok(data.subdomain === organizationSlug, 'Should have subdomain');
     assert.ok(data.tenantName || data.name, 'Should have tenantName or name');
 
     // Organization-specific fields
@@ -46,7 +48,7 @@ test('GET /tenants/by-subdomain/:slug should return organization tenant shape', 
 });
 
 test('GET /tenants/by-subdomain/:slug with unicode characters should render accents correctly', async () => {
-    const response = await fetch(`${backendUrl}/tenants/by-subdomain/drfulano`);
+    const response = await fetch(`${backendUrl}/tenants/by-subdomain/${independentSlug}`);
 
     assert.equal(response.ok, true);
 

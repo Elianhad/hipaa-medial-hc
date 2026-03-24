@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { useUser } from '@/components/DemoSessionProvider';
+import { useUser } from '@/components/SessionProvider';
 import { canAccessOrganizationPortal, extractRoles } from '@/lib/auth/roles';
 
 interface OrganizationPortalGuardProps {

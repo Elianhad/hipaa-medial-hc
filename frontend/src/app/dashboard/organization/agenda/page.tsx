@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { OrganizationPortalGuard } from '../../../../components/OrganizationPortalGuard';
 import {
     getOrgAgenda,
-    DEMO_ORG_AGENDA,
     type OrgAgendaItem,
 } from '@/lib/organization-api';
 
@@ -21,10 +20,11 @@ const attendanceLabel: Record<OrgAgendaItem['attendance'], string> = {
 };
 
 export default function OrgAgendaPage() {
-    const [agenda, setAgenda] = useState<OrgAgendaItem[]>(DEMO_ORG_AGENDA);
+    const [agenda, setAgenda] = useState<OrgAgendaItem[]>([]);
     const [isApiConnected, setIsApiConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState<string>('Todos');
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadAgenda = async () => {
@@ -32,8 +32,10 @@ export default function OrgAgendaPage() {
                 const data = await getOrgAgenda();
                 setAgenda(data.items);
                 setIsApiConnected(true);
-            } catch {
+                setLoadError(null);
+            } catch (error: any) {
                 setIsApiConnected(false);
+                setLoadError(error?.message ?? 'No se pudo conectar con backend.');
             } finally {
                 setIsLoading(false);
             }
@@ -63,10 +65,10 @@ export default function OrgAgendaPage() {
                         <p className="text-slate-500 mt-1">Vista de turnos de todos los profesionales para hoy</p>
                     </header>
 
-                    {/* Demo mode banner */}
+                    {/* Backend connectivity banner */}
                     {!isApiConnected && !isLoading && (
-                        <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
-                            📅 Mostrando agenda demo. Al habilitar Auth0/API se sincroniza automáticamente.
+                        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800">
+                            No se pudo cargar agenda en vivo. {loadError ?? 'Revisá tenant/autenticación y backend.'}
                         </div>
                     )}
 
@@ -78,11 +80,10 @@ export default function OrgAgendaPage() {
                                 key={f}
                                 type="button"
                                 onClick={() => setActiveFilter(f)}
-                                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                                    activeFilter === f
+                                className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${activeFilter === f
                                         ? 'border-orange-400 bg-orange-50 text-orange-700 font-medium'
                                         : 'border-slate-200 hover:border-orange-400 hover:text-orange-600'
-                                }`}
+                                    }`}
                             >
                                 {f}
                             </button>

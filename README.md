@@ -11,7 +11,7 @@ Plataforma de Historia Clínica Electrónica (HCE) multi-tenant, conforme a **HI
 | Frontend | Next.js 16 (App Router), TailwindCSS |
 | Backend | Node.js, NestJS (arquitectura modular) |
 | Base de Datos | PostgreSQL con Row-Level Security (RLS) |
-| Autenticación | Auth0 (roles: SuperAdmin, TenantOrg, TenantProf, Paciente) |
+| Autenticación | Auth0 (roles: SuperAdmin, OrgAdmin, OrgStaff, Paciente) |
 | Almacenamiento | AWS S3 (SSE-KMS, encriptado at-rest) |
 | Estándar Clínico | FHIR R4 → AWS HealthLake |
 | Identidad (mock) | MockRENAPER — simula API gubernamental argentina |
@@ -289,8 +289,8 @@ pnpm --dir frontend run test
 | Rol | Acceso |
 |-----|--------|
 | `SuperAdmin` | Todos los tenants (bypass RLS) |
-| `TenantOrg` | Su tenant — gestión de profesionales y auditoría |
-| `TenantProf` | Su tenant — agenda y registros clínicos |
+| `OrgAdmin` | Su tenant — gestión de profesionales y auditoría |
+| `Professional` | Su tenant — agenda y registros clínicos |
 | `Paciente` | Sus propios registros (multi-tenant consolidado) |
 
 ---

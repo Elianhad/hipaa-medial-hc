@@ -4,10 +4,16 @@ import { useEffect, useState } from 'react';
 import { OrganizationPortalGuard } from '../../../../components/OrganizationPortalGuard';
 import {
     getOrgBilling,
-    DEMO_ORG_BILLING,
     type OrgBillingResponse,
     type OrgBillingItem,
 } from '@/lib/organization-api';
+
+const EMPTY_BILLING: OrgBillingResponse = {
+    pendingAmount: 0,
+    paidThisMonth: 0,
+    rejectedCount: 0,
+    items: [],
+};
 
 const statusBadge: Record<OrgBillingItem['status'], string> = {
     pending: 'bg-amber-100 text-amber-800',
@@ -26,9 +32,10 @@ function formatARS(amount: number): string {
 }
 
 export default function OrgBillingPage() {
-    const [billing, setBilling] = useState<OrgBillingResponse>(DEMO_ORG_BILLING);
+    const [billing, setBilling] = useState<OrgBillingResponse>(EMPTY_BILLING);
     const [isApiConnected, setIsApiConnected] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     useEffect(() => {
         const loadBilling = async () => {
@@ -36,8 +43,10 @@ export default function OrgBillingPage() {
                 const data = await getOrgBilling();
                 setBilling(data);
                 setIsApiConnected(true);
-            } catch {
+                setLoadError(null);
+            } catch (error: any) {
                 setIsApiConnected(false);
+                setLoadError(error?.message ?? 'No se pudo conectar con backend.');
             } finally {
                 setIsLoading(false);
             }
@@ -54,10 +63,10 @@ export default function OrgBillingPage() {
                         <p className="text-slate-500 mt-1">Prestaciones, obras sociales y liquidaciones</p>
                     </header>
 
-                    {/* Demo mode banner */}
+                    {/* Backend connectivity banner */}
                     {!isApiConnected && !isLoading && (
-                        <div className="rounded-lg bg-orange-50 border border-orange-200 px-4 py-3 text-sm text-orange-800">
-                            🧾 Mostrando datos de facturación demo. El módulo de billing está en desarrollo.
+                        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-800">
+                            Facturación no disponible en backend. {loadError ?? 'Módulo pendiente de implementación.'}
                         </div>
                     )}
 

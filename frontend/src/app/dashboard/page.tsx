@@ -1,51 +1,67 @@
 'use client';
 
 import Link from 'next/link';
-import { useUser } from '@/components/DemoSessionProvider';
+import { useUser } from '@/components/SessionProvider';
 import { extractRoles } from '../../lib/auth/roles';
 import { getDashboardCardStates } from '../../lib/auth/dashboard-access';
+import { Suspense } from 'react';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function UnifiedDashboardPage() {
     const { user, isLoading } = useUser();
+    const router = useRouter();
+    const roles = extractRoles(user);
 
-    if (isLoading) {
-        return (
-            <main className="min-h-[70vh] bg-slate-950 text-white px-6 py-16">
-                <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/5 p-8">
-                    <p className="text-slate-300">Cargando tu dashboard...</p>
-                </div>
-            </main>
-        );
+    useEffect(() => {
+        if (isLoading || !user) {
+            return;
+        }
+
+        if (user.appState?.registration?.needsRegistration) {
+            router.replace('/new-tenant');
+        }
+    }, [user, isLoading, router]);
+
+    if (!isLoading && user?.appState?.registration?.needsRegistration) {
+        return null;
     }
 
     if (!user) {
         return (
-            <main className="min-h-[70vh] bg-slate-950 text-white px-6 py-16">
-                <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/5 p-8">
-                    <h1 className="text-3xl font-semibold">Dashboard Unificado</h1>
-                    <p className="mt-3 text-slate-300">
-                        Iniciá sesión para ver únicamente los portales habilitados según tu rol.
-                    </p>
-                    <div className="mt-6 flex flex-wrap gap-3">
-                        <Link
-                            href="/api/auth/login"
-                            className="rounded-lg bg-sky-500 px-5 py-2 text-sm font-medium text-white hover:bg-sky-600"
-                        >
-                            Ingresar
-                        </Link>
-                        <Link
-                            href="/"
-                            className="rounded-lg border border-white/20 px-5 py-2 text-sm font-medium text-white hover:border-white/40"
-                        >
-                            Volver a inicio
-                        </Link>
+            <Suspense fallback={
+                <main className="min-h-[70vh] bg-slate-950 text-white px-6 py-16">
+                    <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/5 p-8">
+                        <p className="text-slate-300">Cargando tu dashboard...</p>
                     </div>
-                </div>
-            </main>
+                </main>
+            } >
+                <main className="min-h-[70vh] bg-slate-950 text-white px-6 py-16">
+                    <div className="mx-auto max-w-4xl rounded-2xl border border-white/10 bg-white/5 p-8">
+                        <h1 className="text-3xl font-semibold">Dashboard Unificado</h1>
+                        <p className="mt-3 text-slate-300">
+                            Iniciá sesión para ver únicamente los portales habilitados según tu rol.
+                        </p>
+                        <div className="mt-6 flex flex-wrap gap-3">
+                            <Link
+                                href="/auth/login"
+                                className="rounded-lg bg-sky-500 px-5 py-2 text-sm font-medium text-white hover:bg-sky-600"
+                            >
+                                Ingresar
+                            </Link>
+                            <Link
+                                href="/"
+                                className="rounded-lg border border-white/20 px-5 py-2 text-sm font-medium text-white hover:border-white/40"
+                            >
+                                Volver a inicio
+                            </Link>
+                        </div>
+                    </div>
+                </main>
+            </Suspense>
         );
     }
 
-    const roles = extractRoles(user);
     const cards = getDashboardCardStates(roles);
     const patientCard = cards.find((card) => card.id === 'patient');
     const professionalCard = cards.find((card) => card.id === 'professional');
@@ -61,7 +77,7 @@ export default function UnifiedDashboardPage() {
 
                 {roles.length === 0 && (
                     <div className="mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 p-4 text-sm text-amber-200">
-                        No encontramos roles en tu sesión. Mostramos acceso base de paciente.
+                        <p>No encontramos roles activos en tu perfil. Si es tu primer ingreso, completá el alta para habilitar tu portal.</p>
                     </div>
                 )}
 
