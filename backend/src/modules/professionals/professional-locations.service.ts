@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ProfessionalLocation } from './professional-location.entity';
@@ -8,7 +8,8 @@ import {
     ProfessionalLocationResponseDto,
 } from './dto/professional-location.dto';
 import { Professional } from './professional.entity';
-import { User } from 'src/users/user.entity';
+import { UsersService } from '../../users/users.service';
+import { UserRole } from '../../common/enums/user-role.enum';
 
 
 @Injectable()
@@ -18,8 +19,7 @@ export class ProfessionalLocationsService {
         private readonly locationRepo: Repository<ProfessionalLocation>,
         @InjectRepository(Professional)
         private readonly professionalRepo: Repository<Professional>,
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
+        private readonly usersService: UsersService,
     ) { }
 
     async getLocationsByProfessional(
@@ -68,11 +68,18 @@ export class ProfessionalLocationsService {
         if (!professional) {
             throw new NotFoundException('Profesional no encontrado');
         }
-        const user = await this.userRepo.findOne({
-            where: { auth0Sub }
-        })
-        if (user?.id !== professional.userId) {
-            throw new BadRequestException('No tienes permiso para crear locaciones para este profesional');
+        const requester = await this.usersService.findByAuth0Id(auth0sub);
+        if (!requester) {
+            throw new NotFoundException('Usuario autenticado no encontrado');
+        }
+
+        const isOwner = requester.id === professional.userId;
+        if (!isOwner) {
+            await this.usersService.assertTenantMembership(requester.id, professional.tenantId);
+            const isTenantAdmin = [UserRole.SuperAdmin, UserRole.OrgAdmin, UserRole.TenantOrg].includes(requester.role);
+            if (!isTenantAdmin) {
+                throw new ForbiddenException('No tienes permiso para crear locaciones para este profesional');
+            }
         }
 
         const tenantId = professional.tenantId;

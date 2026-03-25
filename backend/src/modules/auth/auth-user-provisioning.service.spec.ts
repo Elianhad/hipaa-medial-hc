@@ -24,23 +24,33 @@ function createRepoMock(): MockRepo {
 }
 
 describe('AuthUserProvisioningService', () => {
-    let userRepo: MockRepo;
     let professionalRepo: MockRepo;
     let membershipRepo: MockRepo;
     let tenantRepo: MockRepo;
+    let usersService: {
+        findByAuth0Id: jest.Mock;
+        upsertByAuth0Sub: jest.Mock;
+    };
     let txUserRepo: MockRepo;
     let txProfessionalRepo: MockRepo;
     let txMembershipRepo: MockRepo;
     let txTenantRepo: MockRepo;
     let txManager: TxManager;
     let dataSource: { transaction: jest.Mock };
+    let configService: { get: jest.Mock };
     let service: AuthUserProvisioningService;
 
     beforeEach(() => {
-        userRepo = createRepoMock();
         professionalRepo = createRepoMock();
         membershipRepo = createRepoMock();
         tenantRepo = createRepoMock();
+        usersService = {
+            findByAuth0Id: jest.fn(),
+            upsertByAuth0Sub: jest.fn(),
+        };
+        configService = {
+            get: jest.fn().mockReturnValue(''),
+        };
 
         txUserRepo = createRepoMock();
         txProfessionalRepo = createRepoMock();
@@ -63,16 +73,16 @@ describe('AuthUserProvisioningService', () => {
 
         service = new AuthUserProvisioningService(
             dataSource as any,
-            userRepo as unknown as Repository<any>,
             professionalRepo as unknown as Repository<any>,
             membershipRepo as unknown as Repository<any>,
             tenantRepo as unknown as Repository<any>,
-            ConfigService as unknown as any
+            configService as unknown as ConfigService,
+            usersService as any,
         );
     });
 
     it('returns pending tenant state when first login has no tenant context', async () => {
-        (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+        usersService.findByAuth0Id.mockResolvedValue(null);
 
         const result = await service.syncAuthenticatedUser({
             sub: 'auth0|first-user',
@@ -85,12 +95,19 @@ describe('AuthUserProvisioningService', () => {
             created: false,
             reason: 'tenant_context_required',
         });
-        expect(userRepo.save).not.toHaveBeenCalled();
+        expect(usersService.upsertByAuth0Sub).not.toHaveBeenCalled();
     });
 
     it('creates local user when tenant context exists', async () => {
-        (userRepo.findOne as jest.Mock).mockResolvedValue(null);
-        (userRepo.save as jest.Mock).mockImplementation(async (value) => ({ ...value, id: 'user-1' }));
+        usersService.findByAuth0Id.mockResolvedValue(null);
+        usersService.upsertByAuth0Sub.mockResolvedValue({
+            created: true,
+            user: {
+                id: 'user-1',
+                tenantId: 'tenant-1',
+                role: UserRole.Professional,
+            },
+        });
 
         const result = await service.syncAuthenticatedUser(
             {
@@ -103,11 +120,11 @@ describe('AuthUserProvisioningService', () => {
             { tenantId: 'tenant-1' },
         );
 
-        expect(userRepo.create).toHaveBeenCalledWith(
+        expect(usersService.upsertByAuth0Sub).toHaveBeenCalledWith(
             expect.objectContaining({
                 auth0Sub: 'auth0|new-user',
                 tenantId: 'tenant-1',
-                role: UserRole.TenantProf,
+                role: UserRole.Professional,
             }),
         );
         expect(result).toEqual({
@@ -115,12 +132,12 @@ describe('AuthUserProvisioningService', () => {
             created: true,
             userId: 'user-1',
             tenantId: 'tenant-1',
-            role: UserRole.TenantProf,
+            role: UserRole.Professional,
         });
     });
 
     it('updates existing user data and role on subsequent login', async () => {
-        (userRepo.findOne as jest.Mock).mockResolvedValue({
+        usersService.findByAuth0Id.mockResolvedValue({
             id: 'user-1',
             auth0Sub: 'auth0|existing',
             tenantId: 'tenant-old',
@@ -129,6 +146,14 @@ describe('AuthUserProvisioningService', () => {
             firstName: 'Old',
             lastName: 'Name',
             isActive: false,
+        });
+        usersService.upsertByAuth0Sub.mockResolvedValue({
+            created: false,
+            user: {
+                id: 'user-1',
+                tenantId: 'tenant-new',
+                role: UserRole.OrgAdmin,
+            },
         });
 
         const result = await service.syncAuthenticatedUser(
@@ -141,11 +166,11 @@ describe('AuthUserProvisioningService', () => {
             { tenantId: 'tenant-new' },
         );
 
-        expect(userRepo.save).toHaveBeenCalledWith(
+        expect(usersService.upsertByAuth0Sub).toHaveBeenCalledWith(
             expect.objectContaining({
                 tenantId: 'tenant-new',
                 email: 'updated@example.com',
-                role: UserRole.TenantOrg,
+                role: UserRole.OrgAdmin,
                 isActive: true,
             }),
         );
@@ -155,18 +180,25 @@ describe('AuthUserProvisioningService', () => {
             created: false,
             userId: 'user-1',
             tenantId: 'tenant-new',
-            role: UserRole.TenantOrg,
+            role: UserRole.OrgAdmin,
         });
     });
 
     it('resolves tenant by subdomain when tenantId is missing', async () => {
-        (userRepo.findOne as jest.Mock).mockResolvedValue(null);
+        usersService.findByAuth0Id.mockResolvedValue(null);
         (tenantRepo.findOne as jest.Mock).mockResolvedValue({
             id: 'tenant-from-subdomain',
             subdomain: 'clinica-demo',
             status: TenantStatus.ACTIVE,
         });
-        (userRepo.save as jest.Mock).mockImplementation(async (value) => ({ ...value, id: 'user-subdomain' }));
+        usersService.upsertByAuth0Sub.mockResolvedValue({
+            created: true,
+            user: {
+                id: 'user-subdomain',
+                tenantId: 'tenant-from-subdomain',
+                role: UserRole.Paciente,
+            },
+        });
 
         const result = await service.syncAuthenticatedUser(
             {
@@ -214,7 +246,7 @@ describe('AuthUserProvisioningService', () => {
                 tenantId: 'tenant-1',
                 userId: 'user-1',
                 professionalId: 'prof-1',
-                role: UserRole.TenantProf,
+                role: UserRole.Professional,
             }),
         );
     });
@@ -251,11 +283,11 @@ describe('AuthUserProvisioningService', () => {
         );
     });
     it('returns professionalId in registration status when professional profile exists', async () => {
-        (userRepo.findOne as jest.Mock).mockResolvedValue({
+        usersService.findByAuth0Id.mockResolvedValue({
             id: 'user-1',
             auth0Sub: 'auth0|existing',
             tenantId: 'tenant-1',
-            role: UserRole.TenantProf,
+            role: UserRole.Professional,
         });
         (professionalRepo.findOne as jest.Mock).mockResolvedValue({ id: 'prof-1', userId: 'user-1' });
         (membershipRepo.findOne as jest.Mock).mockResolvedValue(null);

@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { Professional } from '../professionals/professional.entity';
-import { User } from '../../users/user.entity';
+import { UsersService } from '../../users/users.service';
 import { Tenant, TenantStatus, TenantType } from './tenant.entity';
 import { TenantMembership } from './tenant-membership.entity';
 import { CreateTenantDto } from './dto/create-tenant.dto';
@@ -17,8 +17,7 @@ export class TenantsService {
         private readonly membershipRepo: Repository<TenantMembership>,
         @InjectRepository(Professional)
         private readonly professionalRepo: Repository<Professional>,
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
+        private readonly usersService: UsersService,
         @InjectRepository(Appointment)
         private readonly appointmentRepo: Repository<Appointment>,
     ) { }
@@ -38,7 +37,7 @@ export class TenantsService {
             });
 
             const user = professional
-                ? await this.userRepo.findOne({ where: { id: professional.userId } })
+                ? (await this.usersService.findManyByIds([professional.userId], tenant.id))[0] ?? null
                 : null;
 
             const professionalName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
@@ -155,7 +154,7 @@ export class TenantsService {
 
         const userIds = memberships.map((m) => m.userId);
         const [users, professionals] = await Promise.all([
-            this.userRepo.findBy({ id: In(userIds) }),
+            this.usersService.findManyByIds(userIds, tenantId),
             this.professionalRepo.findBy({ userId: In(userIds) }),
         ]);
 

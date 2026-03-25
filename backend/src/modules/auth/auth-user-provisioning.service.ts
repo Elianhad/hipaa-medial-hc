@@ -6,6 +6,7 @@ import { DataSource, Repository } from 'typeorm';
 import { extractNormalizedRoles } from '../../common/auth/role-claims';
 import { UserRole } from '../../common/enums/user-role.enum';
 import { User } from '../../users/user.entity';
+import { UsersService } from '../../users/users.service';
 import { Professional } from '../professionals/professional.entity';
 import { Tenant, TenantStatus } from '../tenants/tenant.entity';
 import { MemberRole, TenantMembership } from '../tenants/tenant-membership.entity';
@@ -67,8 +68,6 @@ export class AuthUserProvisioningService {
     private auth0Management: ManagementClient;
     constructor(
         private readonly dataSource: DataSource,
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
         @InjectRepository(Professional)
         private readonly professionalRepo: Repository<Professional>,
         @InjectRepository(TenantMembership)
@@ -76,6 +75,7 @@ export class AuthUserProvisioningService {
         @InjectRepository(Tenant)
         private readonly tenantRepo: Repository<Tenant>,
         private readonly configService: ConfigService,
+        private readonly usersService: UsersService,
     ) {
         const domain = this.configService.get<string>('AUTH0_DOMAIN') || '';
         const clientId = this.configService.get<string>('AUTH0_M2M_CLIENT_ID') || '';
@@ -309,7 +309,7 @@ export class AuthUserProvisioningService {
             throw new BadRequestException('Missing subject claim in authenticated token');
         }
 
-        const existing = await this.userRepo.findOne({ where: { auth0Sub: sub } });
+        const existing = await this.usersService.findByAuth0Id(sub);
         const roles = extractNormalizedRoles(authUser);
 
         if (!existing) {
@@ -356,7 +356,7 @@ export class AuthUserProvisioningService {
             throw new BadRequestException('Missing subject claim in authenticated token');
         }
 
-        const existing = await this.userRepo.findOne({ where: { auth0Sub: sub } });
+        const existing = await this.usersService.findByAuth0Id(sub);
         const resolvedTenantId = await this.resolveTenantId(input, existing?.tenantId);
 
         if (!resolvedTenantId) {
@@ -370,43 +370,22 @@ export class AuthUserProvisioningService {
         const email = this.getStringClaim(authUser, 'email') ?? this.fallbackEmail(sub);
         const { firstName, lastName } = this.resolveNames(authUser);
         const role = this.resolvePersistedRole(authUser);
-
-        if (existing) {
-            existing.tenantId = resolvedTenantId;
-            existing.email = email;
-            existing.firstName = this.toNullableName(firstName);
-            existing.lastName = this.toNullableName(lastName);
-            existing.role = role;
-            existing.isActive = true;
-
-            const saved = await this.userRepo.save(existing);
-            return {
-                synced: true,
-                created: false,
-                userId: saved.id,
-                tenantId: saved.tenantId,
-                role: saved.role,
-            };
-        }
-
-        const created = this.userRepo.create({
+        const upsert = await this.usersService.upsertByAuth0Sub({
             auth0Sub: sub,
             tenantId: resolvedTenantId,
             email,
-            firstName: this.toNullableName(firstName),
-            lastName: this.toNullableName(lastName),
+            firstName,
+            lastName,
             role,
             isActive: true,
         });
 
-        const saved = await this.userRepo.save(created);
-
         return {
             synced: true,
-            created: true,
-            userId: saved.id,
-            tenantId: saved.tenantId,
-            role: saved.role,
+            created: upsert.created,
+            userId: upsert.user.id,
+            tenantId: upsert.user.tenantId,
+            role: upsert.user.role,
         };
     }
 

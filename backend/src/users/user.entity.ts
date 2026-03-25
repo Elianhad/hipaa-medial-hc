@@ -19,10 +19,10 @@ export class User {
   email: string;
 
   @Column({ name: 'first_name', nullable: true, length: 100 })
-  firstName: string;
+  firstName: string | null;
 
   @Column({ name: 'last_name', nullable: true, length: 100 })
-  lastName: string;
+  lastName: string | null;
 
   @Column({ name: 'is_active', default: true })
   isActive: boolean;

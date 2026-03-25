@@ -4,11 +4,11 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
 import { AuthContextService } from './auth-context.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { User } from '../../users/user.entity';
 import { Professional } from '../professionals/professional.entity';
 import { Tenant } from '../tenants/tenant.entity';
 import { TenantMembership } from '../tenants/tenant-membership.entity';
 import { AuthUserProvisioningService } from './auth-user-provisioning.service';
+import { UsersModule } from '../../users/users.module';
 
 /**
  * AuthModule
@@ -20,7 +20,8 @@ import { AuthUserProvisioningService } from './auth-user-provisioning.service';
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    TypeOrmModule.forFeature([User, Professional, Tenant, TenantMembership]),
+    TypeOrmModule.forFeature([Professional, Tenant, TenantMembership]),
+    UsersModule,
   ],
   providers: [JwtStrategy, AuthContextService, AuthUserProvisioningService],
   controllers: [AuthController],
