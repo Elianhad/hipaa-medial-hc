@@ -2,8 +2,9 @@
 
 import { auth0 } from '@/lib/auth0';
 import { ProfessionalBoardResponse, ProfessionalConfigResponse, ProfessionalConfigPatch, ProfessionalLocation, CreateLocationPayload, UpdateLocationPayload } from './professional-action-types';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
-const PROFESSIONAL_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+const PROFESSIONAL_API_BASE_URL = getBackendApiBaseUrl();
 
 /**
  * CLASE DE ERROR PERSONALIZADA

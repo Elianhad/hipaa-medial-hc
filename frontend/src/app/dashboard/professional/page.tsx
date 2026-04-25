@@ -103,7 +103,7 @@ export default function ProfessionalDashboardPage() {
 
   return (
     <ProfessionalPortalGuard>
-      <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f2f6f5_100%)] py-8 px-4 sm:py-10">
+      <main className="min-h-screen py-8 px-4 sm:py-10">
         <div className="mx-auto max-w-6xl space-y-8">
           <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -114,9 +114,9 @@ export default function ProfessionalDashboardPage() {
                   Gestioná consultas, asistencia y preparación clínica en una sola vista.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Agenda del día</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Seguimiento clínico</span>
-                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                  <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">Agenda del día</span>
+                  <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Seguimiento clínico</span>
+                  <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-violet-700">
                     {isApiConnected ? 'Sincronización activa' : 'Modo local'}
                   </span>
                 </div>
@@ -158,20 +158,20 @@ export default function ProfessionalDashboardPage() {
           </header>
 
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Citas del día</p>
+            <article className="rounded-2xl border border-sky-200 bg-sky-50/70 p-5 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-sky-800">Citas del día</p>
               <p className="mt-3 text-3xl font-bold leading-none text-slate-900">{appointments.length}</p>
             </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Presentes</p>
+            <article className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-emerald-800">Presentes</p>
               <p className="mt-3 text-3xl font-bold leading-none text-emerald-600">{adherence.attended}</p>
             </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Ausentes</p>
+            <article className="rounded-2xl border border-rose-200 bg-rose-50/70 p-5 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-rose-800">Ausentes</p>
               <p className="mt-3 text-3xl font-bold leading-none text-rose-600">{adherence.absent}</p>
             </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Adherencia</p>
+            <article className="rounded-2xl border border-violet-200 bg-violet-50/70 p-5 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-wide text-violet-800">Adherencia</p>
               <p className="mt-3 text-3xl font-bold leading-none text-slate-900">{adherence.percentage}%</p>
             </article>
           </section>
@@ -188,8 +188,8 @@ export default function ProfessionalDashboardPage() {
             </section>
           )}
 
-          <section className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
+          <section className="rounded-3xl border border-sky-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex flex-col gap-2 border-b border-sky-200 bg-sky-50/40 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">Agenda de hoy</h2>
                 <p className="mt-1 text-sm text-slate-500">

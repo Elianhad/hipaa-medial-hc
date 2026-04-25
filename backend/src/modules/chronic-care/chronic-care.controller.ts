@@ -42,7 +42,7 @@ export class ChronicCareController {
     // ─── Baseline ────────────────────────────────────────────────
 
     @ApiOperation({ summary: 'Create or update the baseline for a chronic problem' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('baselines')
     upsertBaseline(
@@ -66,7 +66,7 @@ export class ChronicCareController {
     // ─── Fast-Track Evolution ────────────────────────────────────
 
     @ApiOperation({ summary: 'Create a fast-track / routine-control evolution' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('evolutions/fast-track')
     createFastTrackEvolution(
@@ -91,7 +91,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Promote/refactor problem (rename + reclassify) keeping same ID and history' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Patch('problems/:problemId/promote')
     promoteProblem(
@@ -109,7 +109,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Discard suspected diagnosis and close problem thread' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Patch('problems/:problemId/discard')
     discardProblem(
@@ -139,7 +139,7 @@ export class ChronicCareController {
     // ─── Decompensation ──────────────────────────────────────────
 
     @ApiOperation({ summary: 'Update decompensation status of a problem' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Patch('problems/:problemId/decompensation')
     markDecompensation(
@@ -153,7 +153,7 @@ export class ChronicCareController {
     // ─── Prescriptions ───────────────────────────────────────────
 
     @ApiOperation({ summary: 'Create a prescription linked to a problem' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('prescriptions')
     createPrescription(
@@ -172,7 +172,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'One-click refill — renew all baseline meds' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('prescriptions/one-click-refill')
     oneClickRefill(
@@ -183,7 +183,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Generate prolonged monthly prescription plan for chronic problem' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('prescriptions/prolonged-plan')
     createProlongedPlan(
@@ -194,7 +194,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Digitally sign a prescription and generate digital document (JSON/PDF)' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('prescriptions/:id/sign')
     signPrescription(
@@ -221,7 +221,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Sign clinical evolution note' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('evolutions/:id/sign')
     signEvolution(
@@ -234,7 +234,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Sign full problem thread and lock for immutability' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Post('problems/:problemId/sign-thread')
     signProblemThread(
@@ -259,7 +259,7 @@ export class ChronicCareController {
     }
 
     @ApiOperation({ summary: 'Cancel a prescription' })
-    @Roles(UserRole.TenantProf, UserRole.TenantOrg, UserRole.SuperAdmin)
+    @Roles(UserRole.Professional, UserRole.OrgAdmin, UserRole.SuperAdmin)
     @Permissions('chronic-care:write')
     @Patch('prescriptions/:id/cancel')
     cancelPrescription(
@@ -296,3 +296,4 @@ export class ChronicCareController {
         return this.service.getDashboardSummary(tenantId, patientId);
     }
 }
+

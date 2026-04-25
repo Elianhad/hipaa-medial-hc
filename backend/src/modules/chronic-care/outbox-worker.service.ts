@@ -154,7 +154,8 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
                                 clinicalStatus: event.event_type === 'problem.decompensation_resolved'
                                     ? 'active'
                                     : 'active', // condition itself stays active; evolution thread notes decompensation
-                                category: 'chronic',
+                                category: p.category ?? 'problem-list-item',
+                                verificationStatus: p.verificationStatus,
                             },
                             p.fhirConditionId,
                         );
@@ -169,7 +170,8 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
                         tenantId: p.tenantId,
                         title: p.title,
                         clinicalStatus: p.clinicalStatus ?? 'active',
-                        category: p.category ?? 'symptomatic',
+                        category: p.category ?? 'encounter-diagnosis',
+                        verificationStatus: p.verificationStatus,
                         onsetDate: p.onsetDate,
                         abatementDate: p.resolutionDate,
                         closureSummary: p.closureSummary,

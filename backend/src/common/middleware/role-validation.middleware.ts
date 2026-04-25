@@ -80,14 +80,15 @@ export class RoleValidationMiddleware implements NestMiddleware {
     }
 
     private hasProfessionalRole(roles: string[]): boolean {
-        return hasRole(roles, UserRole.Professional) || hasRole(roles, UserRole.TenantProf);
+        return hasRole(roles, UserRole.Professional) || hasRole(roles, UserRole.Professional);
     }
 
     private hasOrganizationRole(roles: string[]): boolean {
         return (
             hasRole(roles, UserRole.OrgAdmin)
             || hasRole(roles, UserRole.OrgStaff)
-            || hasRole(roles, UserRole.TenantOrg)
+            || hasRole(roles, UserRole.OrgAdmin)
         );
     }
 }
+

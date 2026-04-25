@@ -7,6 +7,10 @@ import {
   Index,
 } from 'typeorm';
 
+/**
+ * @deprecated Use ProblemClinicalStatus + ProblemCategory para lógica nueva.
+ * Se mantiene nullable para compatibilidad con registros legacy.
+ */
 export enum ProblemStatus {
   ACTIVE = 'active',
   RESOLVED = 'resolved',
@@ -21,17 +25,51 @@ export enum DecompensationStatus {
   RESOLVED_DECOMPENSATION = 'resolved_decompensation',
 }
 
+/**
+ * Clasificación funcional del problema, alineada con FHIR R4 Condition.category.
+ *
+ * - ENCOUNTER_DIAGNOSIS  → Diagnóstico del encuentro (motivo de la consulta actual)
+ * - PROBLEM_LIST_ITEM    → Problema longitudinal / crónico en lista activa
+ * - HEALTH_CONCERN       → Preocupación de salud / riesgo o factor predisponente
+ */
 export enum ProblemCategory {
-  ACUTE = 'acute',
-  CHRONIC = 'chronic',
-  SYMPTOMATIC = 'symptomatic',
+  ENCOUNTER_DIAGNOSIS = 'encounter_diagnosis',
+  PROBLEM_LIST_ITEM = 'problem_list_item',
+  HEALTH_CONCERN = 'health_concern',
 }
 
+/**
+ * Estado clínico actual del problema, mapeado directamente a
+ * http://terminology.hl7.org/CodeSystem/condition-clinical.
+ *
+ * - ACTIVE      → Activo
+ * - RECURRENCE  → Recidiva (reapertura de problema previamente resuelto)
+ * - INACTIVE    → Inactivo / controlado
+ * - REMISSION   → Remisión (bajo tratamiento, sin síntomas activos)
+ * - RESOLVED    → Resuelto / cerrado
+ */
 export enum ProblemClinicalStatus {
   ACTIVE = 'active',
-  RESOLVED = 'resolved',
+  RECURRENCE = 'recurrence',
   INACTIVE = 'inactive',
-  RECURRENT = 'recurrent',
+  REMISSION = 'remission',
+  RESOLVED = 'resolved',
+}
+
+/**
+ * Estado de verificación diagnóstica, alineado con FHIR R4 Condition.verificationStatus
+ * (http://terminology.hl7.org/CodeSystem/condition-ver-status).
+ *
+ * - PROVISIONAL   → Presuntivo
+ * - DIFFERENTIAL  → Diagnóstico diferencial
+ * - CONFIRMED     → Confirmado
+ * - REFUTED       → Descartado
+ */
+export enum ProblemVerificationStatus {
+  PROVISIONAL = 'provisional',
+  DIFFERENTIAL = 'differential',
+  CONFIRMED = 'confirmed',
+  REFUTED = 'refuted',
 }
 
 @Entity('problems')
@@ -61,7 +99,11 @@ export class Problem {
   @Column({ name: 'resolution_date', type: 'date', nullable: true })
   resolutionDate: string;
 
-  @Column({ type: 'enum', enum: ProblemStatus, default: ProblemStatus.ACTIVE })
+  /**
+   * @deprecated Campo legacy para compatibilidad con registros anteriores.
+   * Usar clinicalStatus para lógica nueva.
+   */
+  @Column({ type: 'enum', enum: ProblemStatus, nullable: true, default: ProblemStatus.ACTIVE })
   status: ProblemStatus;
 
   @Column({ name: 'fhir_resource_id', nullable: true })
@@ -76,11 +118,20 @@ export class Problem {
   @Column({ name: 'icd11_code', nullable: true, length: 20 })
   icd11Code: string;
 
-  @Column({ name: 'category', type: 'enum', enum: ProblemCategory, default: ProblemCategory.SYMPTOMATIC })
+  @Column({ name: 'category', type: 'enum', enum: ProblemCategory, default: ProblemCategory.ENCOUNTER_DIAGNOSIS })
   category: ProblemCategory;
 
   @Column({ name: 'clinical_status', type: 'enum', enum: ProblemClinicalStatus, default: ProblemClinicalStatus.ACTIVE })
   clinicalStatus: ProblemClinicalStatus;
+
+  @Column({
+    name: 'verification_status',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    default: ProblemVerificationStatus.PROVISIONAL,
+  })
+  verificationStatus: ProblemVerificationStatus;
 
   @Column({ name: 'closure_summary', nullable: true, type: 'text' })
   closureSummary: string;

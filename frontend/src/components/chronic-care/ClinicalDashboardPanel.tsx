@@ -67,18 +67,26 @@ export default function ClinicalDashboardPanel({ patientId, problems }: Props) {
         return state.evolutions;
     }, [evolutions, activeProblems, selectedProblemId]);
 
+    const selectedTrend = selectedProblem ? toTrendIndicator(trendMap[selectedProblem.id] ?? null) : null;
+
     return (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <header className="mb-4">
-                <h2 className="text-xl font-semibold text-slate-900">Dashboard Clínico</h2>
-                <p className="text-sm text-slate-600">
-                    Selecciona un problema activo para ver su evolución cronológica sin perder el hilo clínico.
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <header className="mb-5 px-1">
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Continuidad asistencial</p>
+                <h2 className="mt-2 text-xl font-semibold text-slate-900">Panel de Evolución Clínica</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                    Selecciona un problema activo para revisar su evolución cronológica sin perder el contexto clínico.
                 </p>
             </header>
 
-            <div className="grid gap-4 lg:grid-cols-[360px_1fr]">
-                <aside className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <h3 className="text-sm font-semibold text-slate-800 mb-2">Problemas activos</h3>
+            <div className="grid gap-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-3 sm:p-4 lg:grid-cols-[320px_1fr] lg:gap-5">
+                <aside className="rounded-xl bg-white/70 p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                        <h3 className="text-sm font-semibold text-slate-800">Problemas activos</h3>
+                        <span className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600">
+                            {activeProblems.length}
+                        </span>
+                    </div>
                     {activeProblems.length === 0 && (
                         <p className="text-sm text-slate-500">No hay problemas activos para mostrar.</p>
                     )}
@@ -95,9 +103,9 @@ export default function ClinicalDashboardPanel({ patientId, problems }: Props) {
                                         <button
                                             type="button"
                                             onClick={() => setSelectedProblemId(problem.id)}
-                                            className={`w-full rounded-md border p-3 text-left transition ${isSelected
-                                                ? 'border-indigo-300 bg-indigo-50'
-                                                : 'border-slate-200 bg-white hover:border-slate-300'
+                                            className={`w-full rounded-xl border p-3 text-left transition ${isSelected
+                                                ? 'border-slate-300 bg-white shadow-sm'
+                                                : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
                                                 }`}
                                         >
                                             <div className="flex items-start justify-between gap-2">
@@ -117,10 +125,17 @@ export default function ClinicalDashboardPanel({ patientId, problems }: Props) {
                     )}
                 </aside>
 
-                <div className="rounded-lg border border-slate-200 p-4">
-                    <h3 className="text-sm font-semibold text-slate-800 mb-3">
-                        Historial cronológico {selectedProblem ? `· ${selectedProblem.title}` : ''}
-                    </h3>
+                <div className="rounded-xl bg-white p-4 sm:p-5">
+                    <div className="mb-4 flex flex-col gap-2 border-b border-slate-200 pb-4 sm:flex-row sm:items-end sm:justify-between">
+                        <h3 className="text-base font-semibold text-slate-900">
+                            Registro cronológico {selectedProblem ? `· ${selectedProblem.title}` : ''}
+                        </h3>
+                        {selectedTrend && (
+                            <span className={`inline-flex w-fit rounded-full border px-2.5 py-1 text-xs font-semibold ${selectedTrend.className}`}>
+                                {selectedTrend.label}
+                            </span>
+                        )}
+                    </div>
 
                     {loadingEvolutions && <p className="text-sm text-slate-500">Cargando evoluciones...</p>}
                     {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -135,7 +150,7 @@ export default function ClinicalDashboardPanel({ patientId, problems }: Props) {
                     {!loadingEvolutions && !error && filteredEvolutions.length > 0 && (
                         <ul className="space-y-3">
                             {filteredEvolutions.map((evolution) => (
-                                <li key={evolution.id} className="rounded-md border border-slate-200 bg-slate-50 p-3">
+                                <li key={evolution.id} className="rounded-xl border border-slate-200 bg-slate-50/70 p-4">
                                     <div className="mb-2 flex items-center justify-between gap-3">
                                         <span className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                                             {evolution.evolutionDate} · {String(evolution.evolutionTime).slice(0, 5)}

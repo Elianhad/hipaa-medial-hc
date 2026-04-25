@@ -278,7 +278,7 @@ describe('AuthUserProvisioningService', () => {
                 createdMembership: true,
                 tenantId: 'tenant-org',
                 userId: 'user-org',
-                role: UserRole.TenantOrg,
+                role: UserRole.OrgAdmin,
             }),
         );
     });
@@ -299,4 +299,5 @@ describe('AuthUserProvisioningService', () => {
         expect(result.professionalId).toBe('prof-1');
     });
 });
+
 

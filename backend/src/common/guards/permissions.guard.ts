@@ -10,6 +10,39 @@ import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';
 
 type JwtUser = Record<string, unknown> | undefined;
 
+const ROLE_PERMISSION_FALLBACKS: Record<string, string[]> = {
+    professional: [
+        'clinical-records:read',
+        'clinical-records:write',
+        'chronic-care:read',
+        'chronic-care:write',
+    ],
+    tenantprof: [
+        'clinical-records:read',
+        'clinical-records:write',
+        'chronic-care:read',
+        'chronic-care:write',
+    ],
+    orgadmin: [
+        'clinical-records:read',
+        'clinical-records:write',
+        'chronic-care:read',
+        'chronic-care:write',
+    ],
+    orgstaff: [
+        'clinical-records:read',
+        'clinical-records:write',
+        'chronic-care:read',
+        'chronic-care:write',
+    ],
+    tenantorg: [
+        'clinical-records:read',
+        'clinical-records:write',
+        'chronic-care:read',
+        'chronic-care:write',
+    ],
+};
+
 function extractTokenPermissions(user: JwtUser): string[] {
     if (!user) {
         return [];
@@ -32,6 +65,23 @@ function extractTokenPermissions(user: JwtUser): string[] {
             if (scopedPermission.trim()) {
                 permissions.add(scopedPermission.trim());
             }
+        }
+    }
+
+    return Array.from(permissions);
+}
+
+function extractRoleFallbackPermissions(normalizedRoles: string[]): string[] {
+    const permissions = new Set<string>();
+
+    for (const role of normalizedRoles) {
+        const grantedPermissions = ROLE_PERMISSION_FALLBACKS[role];
+        if (!grantedPermissions) {
+            continue;
+        }
+
+        for (const permission of grantedPermissions) {
+            permissions.add(permission);
         }
     }
 
@@ -65,9 +115,11 @@ export class PermissionsGuard implements CanActivate {
         }
 
         const tokenPermissions = extractTokenPermissions(user);
-        const tokenPermissionSet = new Set(tokenPermissions);
+        const roleFallbackPermissions = extractRoleFallbackPermissions(normalizedRoles);
+        const effectivePermissionSet = new Set([...tokenPermissions, ...roleFallbackPermissions]);
+
         const missingPermissions = requiredPermissions.filter(
-            (requiredPermission) => !tokenPermissionSet.has(requiredPermission),
+            (requiredPermission) => !effectivePermissionSet.has(requiredPermission),
         );
 
         if (missingPermissions.length) {

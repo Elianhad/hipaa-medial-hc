@@ -58,8 +58,7 @@ export interface OrgBillingResponse {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const ORGANIZATION_API_BASE_URL =
-    process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
+export const ORGANIZATION_API_BASE_URL = '/api/protected';
 
 export const DEFAULT_ORG_TENANT_ID = process.env.NEXT_PUBLIC_ORG_TENANT_ID ?? '';
 

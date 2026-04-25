@@ -9,7 +9,7 @@ import { Prescription, PrescriptionStatus } from '../entities/prescription.entit
 import { AdherenceRecord } from '../entities/adherence-record.entity';
 import { ProblemTransitionEvent } from '../entities/problem-transition-event.entity';
 import { ArVademecumItem } from '../entities/ar-vademecum-item.entity';
-import { Problem, ProblemStatus } from '../../clinical-records/problem.entity';
+import { Problem, ProblemStatus, ProblemCategory, ProblemClinicalStatus } from '../../clinical-records/problem.entity';
 import { ClinicalEvolution, RecordType } from '../../clinical-records/clinical-evolution.entity';
 import { FhirService } from '../../fhir/fhir.service';
 import { TerminologyService } from '../../fhir/terminology.service';
@@ -409,14 +409,14 @@ describe('ChronicCareService', () => {
 
             const result = await service.promoteProblem('tenant-1', 'prof-1', 'p-1', {
                 newTitle: 'Artrosis de Rodilla',
-                newCategory: 'chronic',
-                newClinicalStatus: 'active',
+                newCategory: ProblemCategory.PROBLEM_LIST_ITEM,
+                newClinicalStatus: ProblemClinicalStatus.ACTIVE,
                 reasonNote: 'Diagnóstico confirmado por imagen',
             });
 
             expect(result.id).toBe('p-1');
             expect(result.title).toBe('Artrosis de Rodilla');
-            expect(result.category).toBe('chronic');
+            expect(result.category).toBe(ProblemCategory.PROBLEM_LIST_ITEM);
             expect(transitionRepo.save).toHaveBeenCalled();
         });
     });

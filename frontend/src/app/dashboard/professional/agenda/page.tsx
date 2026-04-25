@@ -16,7 +16,7 @@ export default async function ProfessionalAgendaPage() {
 
     return (
         <ProfessionalPortalGuard>
-            <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f2f6f5_100%)] py-8 px-4 sm:py-10">
+            <main className="min-h-screen py-8 px-4 sm:py-10">
                 <div className="mx-auto max-w-5xl space-y-8">
                     <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
                         <div className="flex flex-wrap items-end justify-between gap-4">

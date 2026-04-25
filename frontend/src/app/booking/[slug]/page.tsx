@@ -21,8 +21,6 @@ interface ProfessionalProfile {
     tenantName: string;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
-
 export default function PublicProfessionalBookingPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
@@ -30,7 +28,7 @@ export default function PublicProfessionalBookingPage({ params }: { params: Prom
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        fetch(`${API}/tenants/by-subdomain/${slug}`)
+        fetch(`/api/public/tenants/by-subdomain/${slug}`)
             .then((r) => {
                 if (!r.ok) { setNotFound(true); return null; }
                 return r.json();

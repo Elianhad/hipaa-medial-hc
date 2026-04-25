@@ -58,7 +58,7 @@ export interface SignThreadInput {
     pfdrTransactionId?: string;
 }
 
-const BASE = '/api/chronic-care';
+const BASE = '/api/protected/chronic-care';
 
 async function parseJson<T>(response: Response): Promise<T> {
     const body = await response.json().catch(() => ({}));

@@ -10,7 +10,11 @@ const processes = [
 ];
 
 const children = processes.map(({ name, script }) => {
-    const child = spawn(getCommandName(), getRunArgs(name, script), {
+    const args = getRunArgs(name, script);
+    // When using shell: true, pass args as a string to avoid deprecation warning
+    const spawnArgs = useShell ? [args.join(' ')] : args;
+    
+    const child = spawn(getCommandName(), spawnArgs, {
         cwd: rootDir,
         stdio: 'inherit',
         shell: useShell,

@@ -5,10 +5,12 @@ import { Problem } from './problem.entity';
 import { ClinicalRecordsService } from './clinical-records.service';
 import { ClinicalRecordsController } from './clinical-records.controller';
 import { FhirModule } from '../fhir/fhir.module';
+import { Professional } from '../professionals/professional.entity';
+import { User } from '../../users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ClinicalEvolution, Problem]),
+    TypeOrmModule.forFeature([ClinicalEvolution, Problem, Professional, User]),
     FhirModule,
   ],
   providers: [ClinicalRecordsService],

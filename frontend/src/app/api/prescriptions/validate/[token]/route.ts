@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
-const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:4000';
+const BACKEND = getBackendApiBaseUrl();
 
 export async function GET(
     _req: NextRequest,
-    { params }: { params: { token: string } },
+    { params }: { params: Promise<{ token: string }> },
 ) {
-    const url = `${BACKEND}/public/prescriptions/validate/${params.token}`;
+    const resolved = await params;
+    const url = `${BACKEND}/public/prescriptions/validate/${resolved.token}`;
 
     try {
         const upstream = await fetch(url, {

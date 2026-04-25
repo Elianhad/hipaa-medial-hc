@@ -58,7 +58,7 @@ export default function OrgAgendaPage() {
 
     return (
         <OrganizationPortalGuard>
-            <main className="min-h-screen bg-slate-50 py-10 px-4">
+            <main className="min-h-screen py-10 px-4">
                 <div className="max-w-6xl mx-auto space-y-6">
                     <header>
                         <h1 className="text-3xl font-bold text-slate-900">Agenda Organizacional</h1>

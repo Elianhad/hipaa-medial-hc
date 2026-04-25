@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
     createPrescription,
@@ -27,6 +27,11 @@ export default function PrescriptionSignatureFlow({
     initialProblemId,
     initialProblemTitle,
 }: Props) {
+    const inputClass = 'w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500';
+    const buttonPrimaryClass = 'rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-60';
+    const buttonSecondaryClass = 'rounded-xl border border-sky-300 bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-800 transition hover:border-sky-400 disabled:opacity-60';
+    const buttonWarmClass = 'rounded-xl border border-amber-300 bg-amber-100 px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-200 disabled:opacity-60';
+
     const [resolvedProfessionalId, setResolvedProfessionalId] = useState(professionalId);
     const [problemId, setProblemId] = useState(initialProblemId ?? '');
     const [problemTitle, setProblemTitle] = useState(initialProblemTitle ?? '');
@@ -262,54 +267,60 @@ export default function PrescriptionSignatureFlow({
     }
 
     return (
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
-            <header>
-                <h2 className="text-xl font-bold text-slate-900">Receta Digital y Firma</h2>
-                <p className="text-sm text-slate-600 mt-1">
+        <section className="relative space-y-6 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(16,185,129,0.04)_0%,rgba(14,165,233,0.03)_40%,rgba(245,158,11,0.04)_100%)]" />
+            <header className="space-y-2">
+                <h2 className="text-xl font-semibold text-slate-900">Flujo de prescripción</h2>
+                <p className="text-sm text-slate-600">
                     Flujo: seleccionar problema activo, elegir DCI, emitir receta, firmar y validar QR.
                 </p>
             </header>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <section className="relative space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">Contexto clínico</h3>
+                <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-emerald-400/60 via-emerald-300/20 to-transparent" />
+                <div className="grid gap-4 md:grid-cols-2">
                 <Field label="ID Profesional (obligatorio)">
-                    <input value={resolvedProfessionalId} onChange={(e) => setResolvedProfessionalId(e.target.value)} className="input" placeholder="UUID profesional" />
+                    <input value={resolvedProfessionalId} onChange={(e) => setResolvedProfessionalId(e.target.value)} className={inputClass} placeholder="UUID profesional" />
                 </Field>
                 <Field label="ID Problema Activo (obligatorio)">
-                    <input value={problemId} onChange={(e) => setProblemId(e.target.value)} className="input" placeholder="UUID problema" />
+                    <input value={problemId} onChange={(e) => setProblemId(e.target.value)} className={inputClass} placeholder="UUID problema" />
                 </Field>
                 <Field label="Título Diagnóstico (referencia)">
-                    <input value={problemTitle} onChange={(e) => setProblemTitle(e.target.value)} className="input" placeholder="Ej: HTA esencial" />
+                    <input value={problemTitle} onChange={(e) => setProblemTitle(e.target.value)} className={inputClass} placeholder="Ej: HTA esencial" />
                 </Field>
                 <Field label="ID Evolución (opcional)">
-                    <input value={evolutionId} onChange={(e) => setEvolutionId(e.target.value)} className="input" placeholder="UUID evolución" />
+                    <input value={evolutionId} onChange={(e) => setEvolutionId(e.target.value)} className={inputClass} placeholder="UUID evolución" />
                 </Field>
                 <Field label="Matrícula Médico (obligatoria)">
-                    <input value={doctorLicense} onChange={(e) => setDoctorLicense(e.target.value)} className="input" placeholder="MN 123456" />
+                    <input value={doctorLicense} onChange={(e) => setDoctorLicense(e.target.value)} className={inputClass} placeholder="MN 123456" />
                 </Field>
-            </div>
+                </div>
+            </section>
 
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 space-y-3">
-                <h3 className="font-semibold text-indigo-900">1) Vademécum (Ley 25.649)</h3>
+            <section className="relative space-y-3 rounded-2xl border border-sky-200 bg-sky-50/50 p-4 sm:p-5">
+                <h3 className="text-base font-semibold text-sky-900">1) Vademécum (Ley 25.649)</h3>
+                <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-sky-400/60 via-sky-300/20 to-transparent" />
                 <div className="flex gap-2">
                     <input
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        className="input flex-1"
+                        className={`${inputClass} flex-1`}
                         placeholder="Buscar por DCI o marca"
                     />
-                    <button onClick={handleSearch} disabled={isBusy} className="btn-indigo">Buscar</button>
+                    <button onClick={handleSearch} disabled={isBusy} className={buttonSecondaryClass}>Buscar</button>
                 </div>
 
                 {results.length > 0 && (
                     <div className="grid gap-2 max-h-52 overflow-auto">
                         {results.map((group) => (
-                            <div key={group.dciName} className="rounded-lg border border-indigo-100 bg-white p-2">
-                                <div className="font-medium text-indigo-900">{group.dciName}</div>
+                            <div key={group.dciName} className="rounded-lg border border-sky-200/70 bg-white p-2.5">
+                                <div className="font-medium text-slate-900">{group.dciName}</div>
                                 <div className="flex flex-wrap gap-2 mt-1">
                                     {group.brands.map((brand, idx) => (
                                         <button
                                             key={`${group.dciName}-${idx}`}
-                                            className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs hover:bg-indigo-100"
+                                            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700 hover:border-slate-400"
                                             onClick={() => applySelection(group.dciName, brand.brandName, brand.snomedCtArCode)}
                                         >
                                             {brand.brandName || 'Sin marca'} • {brand.snomedCtArCode}
@@ -320,43 +331,48 @@ export default function PrescriptionSignatureFlow({
                         ))}
                     </div>
                 )}
-            </div>
+            </section>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <section className="relative space-y-4 rounded-2xl border border-violet-200 bg-violet-50/40 p-4 sm:p-5">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-800">Datos de prescripción</h3>
+                <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-violet-400/60 via-violet-300/20 to-transparent" />
+                <div className="grid gap-4 md:grid-cols-2">
                 <Field label="DCI seleccionada (obligatoria)">
-                    <input value={selectedDci} onChange={(e) => setSelectedDci(e.target.value)} className="input" />
+                    <input value={selectedDci} onChange={(e) => setSelectedDci(e.target.value)} className={inputClass} />
                 </Field>
                 <Field label="Marca (opcional)">
-                    <input value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="input" />
+                    <input value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className={inputClass} />
                 </Field>
                 <Field label="SNOMED CT AR">
-                    <input value={selectedSnomed} onChange={(e) => setSelectedSnomed(e.target.value)} className="input" />
+                    <input value={selectedSnomed} onChange={(e) => setSelectedSnomed(e.target.value)} className={inputClass} />
                 </Field>
                 <Field label="Nombre para receta">
-                    <input value={drugName} onChange={(e) => setDrugName(e.target.value)} className="input" />
+                    <input value={drugName} onChange={(e) => setDrugName(e.target.value)} className={inputClass} />
                 </Field>
                 <Field label="Dosis">
-                    <input value={dose} onChange={(e) => setDose(e.target.value)} className="input" placeholder="Ej: 10 mg" />
+                    <input value={dose} onChange={(e) => setDose(e.target.value)} className={inputClass} placeholder="Ej: 10 mg" />
                 </Field>
                 <Field label="Frecuencia">
-                    <input value={frequency} onChange={(e) => setFrequency(e.target.value)} className="input" placeholder="Ej: cada 12 h" />
+                    <input value={frequency} onChange={(e) => setFrequency(e.target.value)} className={inputClass} placeholder="Ej: cada 12 h" />
                 </Field>
                 <Field label="Vía">
-                    <input value={route} onChange={(e) => setRoute(e.target.value)} className="input" placeholder="oral" />
+                    <input value={route} onChange={(e) => setRoute(e.target.value)} className={inputClass} placeholder="oral" />
                 </Field>
                 <Field label="Duración (días)">
-                    <input type="number" value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value) || 0)} className="input" />
+                    <input type="number" value={durationDays} onChange={(e) => setDurationDays(Number(e.target.value) || 0)} className={inputClass} />
                 </Field>
-            </div>
+                </div>
 
-            <Field label="Instrucciones al paciente">
-                <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} className="input min-h-20" />
-            </Field>
+                <Field label="Instrucciones al paciente">
+                    <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} className={`${inputClass} min-h-20`} />
+                </Field>
+            </section>
 
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-3">
-                <h3 className="font-semibold text-emerald-900">2) Emisión de receta</h3>
+            <section className="relative space-y-3 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-4 sm:p-5">
+                <h3 className="text-base font-semibold text-emerald-900">2) Emisión de receta</h3>
+                <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-emerald-400/60 via-emerald-300/20 to-transparent" />
                 <div className="flex flex-wrap gap-2 items-center">
-                    <button onClick={handleCreatePrescription} disabled={isBusy} className="btn-emerald">
+                    <button onClick={handleCreatePrescription} disabled={isBusy} className={buttonPrimaryClass}>
                         Emitir receta única
                     </button>
                     <label className="inline-flex items-center gap-2 text-sm text-slate-700">
@@ -369,58 +385,60 @@ export default function PrescriptionSignatureFlow({
                         min={1}
                         max={6}
                         onChange={(e) => setInstallments(Number(e.target.value) || 3)}
-                        className="input w-24"
+                        className={`${inputClass} w-24`}
                         title="Cuotas mensuales"
                     />
-                    <button onClick={handleCreateProlongedPlan} disabled={isBusy || !isChronic} className="btn-emerald">
+                    <button onClick={handleCreateProlongedPlan} disabled={isBusy || !isChronic} className="rounded-xl border border-emerald-300 bg-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:border-emerald-400 disabled:opacity-60">
                         Receta prolongada
                     </button>
                 </div>
 
-                <p className="text-xs text-emerald-800">
+                <p className="text-xs text-emerald-900/80">
                     Regla aplicada: no se crea receta sin Problem ID. Si es crónico, puede emitirse plan prolongado mensual.
                 </p>
-            </div>
+            </section>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
-                <h3 className="font-semibold text-amber-900">3) Firma digital (Ley 25.506)</h3>
+            <section className="relative space-y-3 rounded-2xl border border-amber-200 bg-amber-50/50 p-4 sm:p-5">
+                <h3 className="text-base font-semibold text-amber-900">3) Firma digital (Ley 25.506)</h3>
+                <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-amber-400/60 via-amber-300/20 to-transparent" />
                 <div className="grid md:grid-cols-3 gap-3">
                     <Field label="Proveedor de firma">
-                        <select value={provider} onChange={(e) => setProvider(e.target.value as SignatureProvider)} className="input">
+                        <select value={provider} onChange={(e) => setProvider(e.target.value as SignatureProvider)} className={inputClass}>
                             <option value="local_hash">local_hash</option>
                             <option value="pfdr">pfdr</option>
                         </select>
                     </Field>
                     <Field label="PFDR Transaction ID (opcional)">
-                        <input value={pfdrTxId} onChange={(e) => setPfdrTxId(e.target.value)} className="input" />
+                        <input value={pfdrTxId} onChange={(e) => setPfdrTxId(e.target.value)} className={inputClass} />
                     </Field>
                     <Field label="ID receta creada">
-                        <input value={prescriptionId} onChange={(e) => setPrescriptionId(e.target.value)} className="input" />
+                        <input value={prescriptionId} onChange={(e) => setPrescriptionId(e.target.value)} className={inputClass} />
                     </Field>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    <button onClick={() => handleSignPrescription('json')} disabled={isBusy} className="btn-amber">
+                    <button onClick={() => handleSignPrescription('json')} disabled={isBusy} className={buttonWarmClass}>
                         Firmar + JSON
                     </button>
-                    <button onClick={() => handleSignPrescription('pdf')} disabled={isBusy} className="btn-amber">
+                    <button onClick={() => handleSignPrescription('pdf')} disabled={isBusy} className={buttonWarmClass}>
                         Firmar + PDF
                     </button>
-                    <button onClick={() => handleGetDocument('json')} disabled={isBusy} className="btn-amber">
+                    <button onClick={() => handleGetDocument('json')} disabled={isBusy} className={buttonWarmClass}>
                         Ver documento JSON
                     </button>
-                    <button onClick={() => handleGetDocument('pdf')} disabled={isBusy} className="btn-amber">
+                    <button onClick={() => handleGetDocument('pdf')} disabled={isBusy} className={buttonWarmClass}>
                         Generar PDF
                     </button>
-                    <button onClick={handleSignThread} disabled={isBusy} className="btn-amber">
+                    <button onClick={handleSignThread} disabled={isBusy} className={buttonWarmClass}>
                         Firmar hilo del problema
                     </button>
                 </div>
-            </div>
+            </section>
 
             {(validationUrl || signedHash || pdfBase64) && (
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2">
-                    <h3 className="font-semibold text-slate-900">4) Validación y salida</h3>
+                <section className="relative space-y-2 rounded-2xl border border-sky-200 bg-sky-50/60 p-4">
+                    <h3 className="font-semibold text-sky-900">4) Validación y salida</h3>
+                    <div className="absolute left-4 right-4 top-0 h-px bg-gradient-to-r from-sky-400/60 via-sky-300/20 to-transparent" />
                     {validationUrl && (
                         <p className="text-sm break-all text-slate-700">
                             URL validación: <a className="text-blue-700 underline" href={validationUrl} target="_blank" rel="noreferrer">{validationUrl}</a>
@@ -430,55 +448,16 @@ export default function PrescriptionSignatureFlow({
                     {pdfBase64 && (
                         <details>
                             <summary className="cursor-pointer text-sm text-slate-700">Ver PDF base64</summary>
-                            <pre className="mt-2 max-h-40 overflow-auto text-[10px] bg-white p-2 rounded border">{pdfBase64}</pre>
+                            <pre className="mt-2 max-h-40 overflow-auto rounded-lg border border-slate-200 bg-white p-2 text-[10px]">{pdfBase64}</pre>
                         </details>
                     )}
-                </div>
+                </section>
             )}
-
-            <style jsx>{`
-        .input {
-          width: 100%;
-          border: 1px solid #cbd5e1;
-          border-radius: 0.6rem;
-          padding: 0.5rem 0.65rem;
-          font-size: 0.9rem;
-          background: white;
-        }
-        .btn-indigo {
-          border-radius: 0.6rem;
-          padding: 0.5rem 0.85rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: white;
-          background: #4338ca;
-        }
-        .btn-emerald {
-          border-radius: 0.6rem;
-          padding: 0.5rem 0.85rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: white;
-          background: #047857;
-        }
-        .btn-amber {
-          border-radius: 0.6rem;
-          padding: 0.5rem 0.85rem;
-          font-size: 0.9rem;
-          font-weight: 600;
-          color: white;
-          background: #b45309;
-        }
-        button:disabled {
-          opacity: 0.55;
-          cursor: not-allowed;
-        }
-      `}</style>
         </section>
     );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
     return (
         <label className="block space-y-1">
             <span className="text-xs font-semibold text-slate-600 uppercase tracking-wide">{label}</span>

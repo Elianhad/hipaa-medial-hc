@@ -17,9 +17,9 @@ interface TenantRecord {
 }
 
 async function fetchTenant(slug: string): Promise<TenantRecord | null> {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+    const appBaseUrl = process.env.APP_BASE_URL ?? 'http://localhost:3000';
     try {
-        const res = await fetch(`${apiUrl}/tenants/by-subdomain/${slug}`, {
+        const res = await fetch(`${appBaseUrl}/api/public/tenants/by-subdomain/${encodeURIComponent(slug)}`, {
             next: { revalidate: 60 },
         });
         if (!res.ok) return null;

@@ -1,27 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth0 } from '@/lib/auth0';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
-const BACKEND = process.env.BACKEND_URL ?? 'http://localhost:4000';
+const BACKEND = getBackendApiBaseUrl();
 
 /** Proxy /api/chronic-care/* → backend /chronic-care/* */
 export async function GET(
     req: NextRequest,
-    { params }: { params: { path: string[] } },
+    { params }: { params: Promise<{ path: string[] }> },
 ) {
-    return proxy(req, params.path, 'GET');
+    const resolved = await params;
+    return proxy(req, resolved.path, 'GET');
 }
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { path: string[] } },
+    { params }: { params: Promise<{ path: string[] }> },
 ) {
-    return proxy(req, params.path, 'POST');
+    const resolved = await params;
+    return proxy(req, resolved.path, 'POST');
 }
 
 export async function PATCH(
     req: NextRequest,
-    { params }: { params: { path: string[] } },
+    { params }: { params: Promise<{ path: string[] }> },
 ) {
-    return proxy(req, params.path, 'PATCH');
+    const resolved = await params;
+    return proxy(req, resolved.path, 'PATCH');
 }
 
 async function proxy(
@@ -29,17 +34,33 @@ async function proxy(
     pathSegments: string[],
     method: string,
 ): Promise<NextResponse> {
+    const session = await auth0.getSession();
+    if (!session?.user) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    let token: string | undefined;
+    try {
+        const tokenResponse = await auth0.getAccessToken();
+        token = tokenResponse?.token;
+    } catch (err: unknown) {
+        const detail = err instanceof Error ? err.message : String(err);
+        console.error('[chronic-care proxy] getAccessToken error:', detail);
+        return NextResponse.json({ message: 'No se pudo validar la sesion. Volve a iniciar sesion.' }, { status: 401 });
+    }
+
+    if (!token) {
+        return NextResponse.json({ message: 'No access token available' }, { status: 401 });
+    }
+
     const backendPath = `/chronic-care/${pathSegments.join('/')}`;
     const search = req.nextUrl.search;
     const url = `${BACKEND}${backendPath}${search}`;
 
     const headers: Record<string, string> = {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
     };
-
-    // Forward Authorization header
-    const auth = req.headers.get('authorization');
-    if (auth) headers['Authorization'] = auth;
 
     // Forward tenant header
     const tenant = req.headers.get('x-tenant-id');
@@ -51,13 +72,21 @@ async function proxy(
                 ? await req.text().catch(() => undefined)
                 : undefined;
 
-        const upstream = await fetch(url, { method, headers, body });
+        const upstream = await fetch(url, { method, headers, body, cache: 'no-store' });
         const json = await upstream.json().catch(() => ({}));
 
+        if (!upstream.ok) {
+            const message = (json as any)?.message ?? `Error ${upstream.status}`;
+            return NextResponse.json(
+                { message: Array.isArray(message) ? message.join(', ') : String(message) },
+                { status: upstream.status },
+            );
+        }
+
         return NextResponse.json(json, { status: upstream.status });
-    } catch (err: any) {
+    } catch {
         return NextResponse.json(
-            { message: 'Backend unreachable', detail: err?.message },
+            { message: 'Servicio no disponible. Intente nuevamente.' },
             { status: 502 },
         );
     }

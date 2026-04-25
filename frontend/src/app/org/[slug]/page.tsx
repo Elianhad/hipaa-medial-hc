@@ -17,8 +17,6 @@ interface OrgProfile {
     settings: Record<string, unknown>;
 }
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
-
 export default function PublicOrgBookingPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const [org, setOrg] = useState<OrgProfile | null>(null);
@@ -26,7 +24,7 @@ export default function PublicOrgBookingPage({ params }: { params: Promise<{ slu
     const [notFound, setNotFound] = useState(false);
 
     useEffect(() => {
-        fetch(`${API}/tenants/by-subdomain/${slug}`)
+        fetch(`/api/public/tenants/by-subdomain/${slug}`)
             .then((r) => {
                 if (!r.ok) { setNotFound(true); return null; }
                 return r.json();

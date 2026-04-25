@@ -76,7 +76,7 @@ export class ProfessionalLocationsService {
         const isOwner = requester.id === professional.userId;
         if (!isOwner) {
             await this.usersService.assertTenantMembership(requester.id, professional.tenantId);
-            const isTenantAdmin = [UserRole.SuperAdmin, UserRole.OrgAdmin, UserRole.TenantOrg].includes(requester.role);
+            const isTenantAdmin = [UserRole.SuperAdmin, UserRole.OrgAdmin, UserRole.OrgAdmin].includes(requester.role);
             if (!isTenantAdmin) {
                 throw new ForbiddenException('No tienes permiso para crear locaciones para este profesional');
             }
@@ -240,3 +240,4 @@ export class ProfessionalLocationsService {
         };
     }
 }
+

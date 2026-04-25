@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth0 } from '@/lib/auth0';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
 function extractTenantSubdomain(host: string | null): string | undefined {
     if (!host) {
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
             try {
                 const tokenResponse = await auth0.getAccessToken();
                 const token = tokenResponse?.token;
-                const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+                const backendBaseUrl = getBackendApiBaseUrl();
                 const tenantIdHeader = request.headers.get('x-tenant-id') ?? undefined;
                 const tenantSubdomain = extractTenantSubdomain(request.headers.get('host'));
 

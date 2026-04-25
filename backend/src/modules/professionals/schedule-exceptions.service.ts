@@ -156,7 +156,7 @@ export class ScheduleExceptionsService {
 
         await this.usersService.assertTenantMembership(requester.id, professional.tenantId);
 
-        const isTenantAdmin = [UserRole.SuperAdmin, UserRole.OrgAdmin, UserRole.TenantOrg].includes(
+        const isTenantAdmin = [UserRole.SuperAdmin, UserRole.OrgAdmin, UserRole.OrgAdmin].includes(
             requester.role,
         );
 
@@ -167,3 +167,4 @@ export class ScheduleExceptionsService {
         }
     }
 }
+

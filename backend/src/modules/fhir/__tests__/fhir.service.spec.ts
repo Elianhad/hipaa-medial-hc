@@ -44,8 +44,8 @@ describe('FhirService — resource builders', () => {
   });
 
   describe('mapProblemStatusToConditionClinicalStatus()', () => {
-    it('maps recurrent to recurrence for FHIR', () => {
-      const status = service.mapProblemStatusToConditionClinicalStatus('recurrent');
+    it('passes through FHIR-aligned status codes', () => {
+      const status = service.mapProblemStatusToConditionClinicalStatus('recurrence');
       expect(status.coding[0].code).toBe('recurrence');
     });
   });
@@ -58,7 +58,7 @@ describe('FhirService — resource builders', () => {
       tenantId: 'tenant-uuid-001',
       title: 'Diabetes mellitus tipo 2',
       clinicalStatus: 'active',
-      category: 'chronic',
+      category: 'problem-list-item',
       snomedCode: '44054006',
       snomedDisplay: 'Diabetes mellitus type 2',
       icd10Code: 'E11.9',
@@ -82,7 +82,7 @@ describe('FhirService — resource builders', () => {
 
     it('maps category and clinical status', () => {
       const resource = service.buildProblemConditionResource(input);
-      expect(resource.category[0].coding[0].code).toBe('chronic');
+      expect(resource.category[0].coding[0].code).toBe('problem-list-item');
       expect(resource.clinicalStatus.coding[0].code).toBe('active');
     });
   });

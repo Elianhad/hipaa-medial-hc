@@ -143,14 +143,13 @@ export class ChronicCareService {
             clinicalStatus: problem.clinicalStatus,
         };
 
-        const toCategory = (dto.newCategory ?? ProblemCategory.CHRONIC) as ProblemCategory;
+        const toCategory = (dto.newCategory ?? ProblemCategory.PROBLEM_LIST_ITEM) as ProblemCategory;
         const toClinicalStatus = (dto.newClinicalStatus ?? ProblemClinicalStatus.ACTIVE) as ProblemClinicalStatus;
 
         Object.assign(problem, {
             title: dto.newTitle,
             category: toCategory,
             clinicalStatus: toClinicalStatus,
-            status: toCategory === ProblemCategory.CHRONIC ? ProblemStatus.CHRONIC : ProblemStatus.ACTIVE,
             snomedCode: dto.snomedCode ?? problem.snomedCode,
             icd10Code: dto.icd10Code ?? problem.icd10Code,
             icd11Code: dto.icd11Code ?? problem.icd11Code,
@@ -163,7 +162,7 @@ export class ChronicCareService {
                 tenantId,
                 problemId: saved.id,
                 patientId: saved.patientId,
-                transitionType: toCategory === ProblemCategory.CHRONIC
+                transitionType: toCategory === ProblemCategory.PROBLEM_LIST_ITEM
                     ? 'promoted_to_chronic'
                     : 'reclassified',
                 fromTitle: previous.title,
@@ -182,8 +181,8 @@ export class ChronicCareService {
             }),
         );
 
-        // Auto-bootstrap baseline when promoted to chronic and none exists.
-        if (saved.category === ProblemCategory.CHRONIC) {
+        // Auto-bootstrap baseline cuando se promueve a problema longitudinal (crónico).
+        if (saved.category === ProblemCategory.PROBLEM_LIST_ITEM) {
             const baseline = await this.baselineRepo.findOne({ where: { problemId: saved.id, tenantId } });
             if (!baseline) {
                 await this.baselineRepo.save(
@@ -680,7 +679,7 @@ export class ChronicCareService {
     ): Promise<Prescription[]> {
         const problem = await this.problemRepo.findOne({ where: { id: dto.problemId, tenantId } });
         if (!problem) throw new NotFoundException(`Problem ${dto.problemId} not found`);
-        if (problem.category !== ProblemCategory.CHRONIC && problem.status !== ProblemStatus.CHRONIC) {
+        if (problem.category !== ProblemCategory.PROBLEM_LIST_ITEM && problem.status !== ProblemStatus.CHRONIC) {
             throw new BadRequestException('Prolonged prescriptions are only allowed for chronic problems');
         }
 
@@ -1205,16 +1204,17 @@ export class ChronicCareService {
         }
     }
 
-    private mapCategoryToFhir(category?: ProblemCategory): 'acute' | 'chronic' | 'symptomatic' {
-        if (category === ProblemCategory.ACUTE) return 'acute';
-        if (category === ProblemCategory.CHRONIC) return 'chronic';
-        return 'symptomatic';
+    private mapCategoryToFhir(category?: ProblemCategory): 'encounter-diagnosis' | 'problem-list-item' | 'health-concern' {
+        if (category === ProblemCategory.PROBLEM_LIST_ITEM) return 'problem-list-item';
+        if (category === ProblemCategory.HEALTH_CONCERN) return 'health-concern';
+        return 'encounter-diagnosis';
     }
 
-    private mapClinicalStatusToFhir(status?: ProblemClinicalStatus): 'active' | 'resolved' | 'inactive' | 'recurrent' {
+    private mapClinicalStatusToFhir(status?: ProblemClinicalStatus): 'active' | 'resolved' | 'inactive' | 'recurrence' | 'remission' {
         if (status === ProblemClinicalStatus.RESOLVED) return 'resolved';
         if (status === ProblemClinicalStatus.INACTIVE) return 'inactive';
-        if (status === ProblemClinicalStatus.RECURRENT) return 'recurrent';
+        if (status === ProblemClinicalStatus.RECURRENCE) return 'recurrence';
+        if (status === ProblemClinicalStatus.REMISSION) return 'remission';
         return 'active';
     }
 

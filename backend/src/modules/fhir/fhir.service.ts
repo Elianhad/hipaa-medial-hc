@@ -7,9 +7,16 @@ export type FhirProblemClinicalStatus =
   | 'active'
   | 'resolved'
   | 'inactive'
-  | 'recurrent';
+  | 'recurrence'
+  | 'remission';
 
-export type FhirProblemCategory = 'acute' | 'chronic' | 'symptomatic';
+/**
+ * Valores alineados con http://terminology.hl7.org/CodeSystem/condition-category
+ */
+export type FhirProblemCategory =
+  | 'encounter-diagnosis'
+  | 'problem-list-item'
+  | 'health-concern';
 
 export type FhirEvolutionTrend =
   | 'improving'
@@ -114,19 +121,35 @@ export interface FhirOrderInput {
 export class FhirService {
   private readonly logger = new Logger(FhirService.name);
   private readonly baseUrl: string;
-  private readonly datastoreId: string;
+  private readonly clientId: string;
+  private readonly clientSecret: string;
+
+  /** Token Medplum en cache para evitar solicitar uno nuevo en cada request */
+  private medplumAccessToken: string | null = null;
+  private medplumTokenExpiresAt = 0;
 
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
-    this.datastoreId = this.configService.get<string>(
-      'AWS_HEALTHLAKE_DATASTORE_ID',
-    ) ?? '';
     this.baseUrl =
-      this.configService.get<string>('AWS_HEALTHLAKE_ENDPOINT') ??
-      `https://healthlake.${this.configService.get<string>('AWS_REGION') ?? 'us-east-1'
-      }.amazonaws.com/datastore/${this.datastoreId}/r4`;
+      this.configService.get<string>('medplum.baseUrl') ??
+      this.configService.get<string>('MEDPLUM_BASE_URL') ??
+      'https://api.medplum.com';
+
+    this.clientId =
+      this.configService.get<string>('medplum.clientId') ??
+      this.configService.get<string>('MEDPLUM_CLIENT_ID') ??
+      '';
+
+    this.clientSecret =
+      this.configService.get<string>('medplum.clientSecret') ??
+      this.configService.get<string>('MEDPLUM_CLIENT_SECRET') ??
+      '';
+  }
+
+  isConfigured(): boolean {
+    return this.clientId.trim().length > 0 && this.clientSecret.trim().length > 0;
   }
 
   async upsertPatient(input: FhirPatientInput): Promise<string> {
@@ -272,15 +295,20 @@ export class FhirService {
   }
 
   mapProblemStatusToConditionClinicalStatus(status: FhirProblemClinicalStatus) {
-    const code = status === 'recurrent' ? 'recurrence' : status;
     return {
       coding: [
         {
           system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-          code,
+          code: status,
         },
       ],
     };
+  }
+
+  private categoryToSpanish(category?: FhirProblemCategory): string {
+    if (category === 'problem-list-item') return 'Problema longitudinal';
+    if (category === 'health-concern') return 'Preocupación de salud';
+    return 'Diagnóstico del encuentro';
   }
 
   mapTrendToScore(trend?: FhirEvolutionTrend): number | undefined {
@@ -390,11 +418,12 @@ export class FhirService {
         {
           coding: [
             {
-              system: 'https://hipaa-hce/fhir/CodeSystem/problem-category',
-              code: input.category ?? 'symptomatic',
+              // Sistema canónico FHIR R4 para Condition.category
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              code: input.category ?? 'encounter-diagnosis',
             },
           ],
-          text: input.category ?? 'symptomatic',
+          text: this.categoryToSpanish(input.category),
         },
       ],
       code: {
@@ -761,7 +790,8 @@ export class FhirService {
     path: string,
     body?: object,
   ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+    const url = `${this.baseUrl}/fhir/R4${path}`;
+    const token = await this.getMedplumToken();
 
     try {
       const response = await firstValueFrom(
@@ -772,6 +802,7 @@ export class FhirService {
           headers: {
             'Content-Type': 'application/fhir+json',
             Accept: 'application/fhir+json',
+            Authorization: `Bearer ${token}`,
           },
         }),
       );
@@ -784,6 +815,44 @@ export class FhirService {
       throw new InternalServerErrorException(
         `FHIR request failed: ${error?.message}`,
       );
+    }
+  }
+
+  /**
+   * Obtiene un Bearer token de Medplum usando client credentials OAuth2.
+   * El token se cachea en memoria durante su tiempo de vida (~1h).
+   */
+  private async getMedplumToken(): Promise<string> {
+    if (this.medplumAccessToken && Date.now() < this.medplumTokenExpiresAt) {
+      return this.medplumAccessToken;
+    }
+
+    if (!this.isConfigured()) {
+      throw new InternalServerErrorException('FHIR auth skipped: Medplum credentials missing');
+    }
+
+    const tokenUrl = `${this.baseUrl}/oauth2/token`;
+    const params = new URLSearchParams();
+    params.set('grant_type', 'client_credentials');
+    params.set('client_id', this.clientId);
+    params.set('client_secret', this.clientSecret);
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post<{ access_token: string; expires_in: number }>(
+          tokenUrl,
+          params.toString(),
+          { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+        ),
+      );
+      const { access_token, expires_in } = response.data;
+      this.medplumAccessToken = access_token;
+      // Renovar 60 s antes del vencimiento
+      this.medplumTokenExpiresAt = Date.now() + (expires_in - 60) * 1000;
+      return access_token;
+    } catch (error: any) {
+      this.logger.error('No se pudo obtener token Medplum', error?.message);
+      throw new InternalServerErrorException('FHIR auth failed: no Medplum token');
     }
   }
 }

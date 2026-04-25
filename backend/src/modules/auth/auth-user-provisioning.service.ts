@@ -140,7 +140,7 @@ export class AuthUserProvisioningService {
                 tenant = tenantRepo.create({
                     name: tenantName,
                     subdomain,
-                    type: role === UserRole.TenantOrg ? TenantType.ORGANIZATION : TenantType.INDEPENDENT,
+                    type: role === UserRole.OrgAdmin ? TenantType.ORGANIZATION : TenantType.INDEPENDENT,
                     status: TenantStatus.ACTIVE,
                 });
                 tenant = await tenantRepo.save(tenant);
@@ -212,7 +212,7 @@ export class AuthUserProvisioningService {
             }
 
             // ── TenantMembership (para adminOrg) ────────────────────────────
-            if (role === UserRole.TenantOrg) {
+            if (role === UserRole.OrgAdmin) {
                 const existingMembership = await membershipRepo.findOne({
                     where: { tenantId: tenant.id, userId: user.id },
                 });
@@ -328,8 +328,8 @@ export class AuthUserProvisioningService {
             await this.membershipRepo.findOne({ where: { userId: existing.id, isActive: true } }),
         );
 
-        const professionalRole = [UserRole.TenantProf, UserRole.Professional].includes(existing.role);
-        const organizationRole = [UserRole.TenantOrg, UserRole.OrgAdmin, UserRole.OrgStaff].includes(existing.role);
+        const professionalRole = [UserRole.Professional, UserRole.Professional].includes(existing.role);
+        const organizationRole = [UserRole.OrgAdmin, UserRole.OrgAdmin, UserRole.OrgStaff].includes(existing.role);
         const needsRegistration =
             (professionalRole && !hasProfessionalProfile) ||
             (organizationRole && !hasOrganizationMembership);
@@ -463,7 +463,7 @@ export class AuthUserProvisioningService {
 
     private resolveRegisterRole(role: RegisterUserInput['role']): UserRole {
         if (role === 'adminOrg') {
-            return UserRole.TenantOrg;
+            return UserRole.OrgAdmin;
         }
         // 'professional' → UserRole.Professional para que la condición de creación
         // del Professional entity funcione correctamente.
@@ -494,4 +494,5 @@ export class AuthUserProvisioningService {
         return trimmed.length > 0 ? trimmed : undefined;
     }
 }
+
 

@@ -4,8 +4,6 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { PatientRegistrationForm } from '@/components/forms/PatientRegistrationForm';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
-
 interface Patient {
   id: string;
   firstName: string;
@@ -45,7 +43,7 @@ export default function OrgPacientesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/patients?page=${p}&limit=20`);
+      const res = await fetch(`/api/protected/patients?page=${p}&limit=20`, { cache: 'no-store' });
       if (!res.ok) throw new Error('No se pudo cargar el listado de pacientes');
       const json: PatientsResponse = await res.json();
       setPatients(json.data);
@@ -70,7 +68,7 @@ export default function OrgPacientesPage() {
   });
 
   return (
-    <main className="min-h-screen bg-slate-50 py-10 px-4">
+    <main className="min-h-screen py-10 px-4">
       <div className="max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

@@ -46,13 +46,14 @@ export default function OrganizationDashboardPage() {
 
     return (
         <OrganizationPortalGuard>
-            <main className="min-h-screen bg-slate-50 py-10 px-4">
+            <main className="min-h-screen py-10 px-4">
                 <div className="max-w-6xl mx-auto space-y-8">
-                    <header>
-                        <h1 className="text-3xl font-bold text-slate-900">
+                    <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+                        <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panel organizacional</p>
+                        <h1 className="mt-3 text-3xl font-bold text-slate-900">
                             Portal de la Organización
                         </h1>
-                        <p className="mt-1 text-slate-500">
+                        <p className="mt-2 text-slate-600">
                             Auditoría médica, facturación y gestión de profesionales
                         </p>
                     </header>
@@ -69,7 +70,7 @@ export default function OrganizationDashboardPage() {
                         {kpis.map((card) => (
                             <div
                                 key={card.label}
-                                className="rounded-xl bg-white p-6 shadow flex items-center gap-4"
+                                className="rounded-xl border border-slate-200 bg-white/90 p-6 shadow-sm flex items-center gap-4"
                             >
                                 <span className="text-4xl">{card.icon}</span>
                                 <div>
@@ -83,15 +84,15 @@ export default function OrganizationDashboardPage() {
                     {/* Quick navigation */}
                     <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         {[
-                            { href: '/dashboard/organization/agenda', label: '📅 Agenda', desc: 'Ver turnos de todos los profesionales' },
-                            { href: '/dashboard/organization/staff', label: '👥 Staff', desc: 'Gestionar profesionales de la organización' },
-                            { href: '/dashboard/organization/pacientes', label: '🩺 Pacientes', desc: 'Registrar y gestionar pacientes' },
-                            { href: '/dashboard/organization/billing', label: '🧾 Facturación', desc: 'Prestaciones, liquidaciones y auditoría' },
+                            { href: '/dashboard/organization/agenda', label: '📅 Agenda', desc: 'Ver turnos de todos los profesionales', tint: 'border-sky-200 bg-sky-50/70 hover:border-sky-300' },
+                            { href: '/dashboard/organization/staff', label: '👥 Staff', desc: 'Gestionar profesionales de la organización', tint: 'border-violet-200 bg-violet-50/70 hover:border-violet-300' },
+                            { href: '/dashboard/organization/pacientes', label: '🩺 Pacientes', desc: 'Registrar y gestionar pacientes', tint: 'border-emerald-200 bg-emerald-50/70 hover:border-emerald-300' },
+                            { href: '/dashboard/organization/billing', label: '🧾 Facturación', desc: 'Prestaciones, liquidaciones y auditoría', tint: 'border-amber-200 bg-amber-50/70 hover:border-amber-300' },
                         ].map((link) => (
                             <a
                                 key={link.href}
                                 href={link.href}
-                                className="rounded-xl bg-white p-5 shadow hover:shadow-md border border-slate-100 hover:border-orange-300 transition-all"
+                                className={`rounded-xl p-5 shadow-sm border transition-all ${link.tint}`}
                             >
                                 <p className="font-semibold text-slate-800 text-lg">{link.label}</p>
                                 <p className="text-sm text-slate-500 mt-1">{link.desc}</p>

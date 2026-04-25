@@ -6,8 +6,6 @@ import { useEffect, useState, useCallback } from 'react';
 import { PatientRegistrationForm } from '@/components/forms/PatientRegistrationForm';
 import { ArrowLeftIcon, SearchIcon } from 'lucide-react';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
-
 interface Patient {
   id: string;
   firstName: string;
@@ -48,7 +46,7 @@ export default function ProfessionalPacientesPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/patients?page=${p}&limit=20`);
+      const res = await fetch(`/api/protected/patients?page=${p}&limit=20`, { cache: 'no-store' });
       if (!res.ok) throw new Error('No se pudo cargar el listado de pacientes');
       const json: PatientsResponse = await res.json();
       setPatients(json.data);
@@ -78,7 +76,7 @@ export default function ProfessionalPacientesPage() {
   });
 
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f2f6f5_100%)] py-8 px-4 sm:py-10">
+    <main className="min-h-screen py-8 px-4 sm:py-10">
       <div className="mx-auto max-w-6xl space-y-8">
         <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">

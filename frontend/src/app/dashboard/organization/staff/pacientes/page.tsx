@@ -1,6 +1,6 @@
 export default function OrgStaffPacientesPage() {
     return (
-        <main className="min-h-screen bg-slate-50 py-10 px-4">
+        <main className="min-h-screen py-10 px-4">
             <div className="max-w-5xl mx-auto space-y-6">
                 <header className="flex items-center gap-4">
                     <a href="/dashboard/organization/staff/dashboard" className="text-slate-400 hover:text-slate-600 text-sm">

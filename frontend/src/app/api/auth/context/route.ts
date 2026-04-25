@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth0 } from '@/lib/auth0';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
 type AccessContextKind = 'patient' | 'professional' | 'organization' | 'superadmin';
 
@@ -99,7 +100,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
-    const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+    const backendBaseUrl = getBackendApiBaseUrl();
 
     try {
         const tokenResponse = await auth0.getAccessToken();

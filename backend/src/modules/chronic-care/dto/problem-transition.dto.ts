@@ -1,19 +1,18 @@
 import { IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
-
-export type ProblemCategory = 'acute' | 'chronic' | 'symptomatic';
-export type ProblemClinicalStatus = 'active' | 'resolved' | 'inactive' | 'recurrent';
+import { ProblemCategory, ProblemClinicalStatus } from '../../clinical-records/problem.entity';
 
 enum ProblemCategoryEnum {
-    ACUTE = 'acute',
-    CHRONIC = 'chronic',
-    SYMPTOMATIC = 'symptomatic',
+    ENCOUNTER_DIAGNOSIS = 'encounter_diagnosis',
+    PROBLEM_LIST_ITEM = 'problem_list_item',
+    HEALTH_CONCERN = 'health_concern',
 }
 
 enum ProblemClinicalStatusEnum {
     ACTIVE = 'active',
-    RESOLVED = 'resolved',
+    RECURRENCE = 'recurrence',
     INACTIVE = 'inactive',
-    RECURRENT = 'recurrent',
+    REMISSION = 'remission',
+    RESOLVED = 'resolved',
 }
 
 export class PromoteProblemDto {
@@ -23,11 +22,11 @@ export class PromoteProblemDto {
 
     @IsEnum(ProblemCategoryEnum)
     @IsOptional()
-    newCategory?: ProblemCategory = 'chronic';
+    newCategory?: ProblemCategory = ProblemCategory.PROBLEM_LIST_ITEM;
 
     @IsEnum(ProblemClinicalStatusEnum)
     @IsOptional()
-    newClinicalStatus?: ProblemClinicalStatus = 'active';
+    newClinicalStatus?: ProblemClinicalStatus = ProblemClinicalStatus.ACTIVE;
 
     @IsString()
     @IsOptional()

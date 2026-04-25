@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth0 } from '@/lib/auth0';
+import { getBackendApiBaseUrl } from '@/lib/backend-api-url';
 
 export async function POST(request: Request) {
     const session = await auth0.getSession();
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'context is required' }, { status: 400 });
     }
 
-    const backendBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/v1';
+    const backendBaseUrl = getBackendApiBaseUrl();
 
     try {
         const tokenResponse = await auth0.getAccessToken();

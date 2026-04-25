@@ -4,15 +4,18 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
-    createProblem,
+    checkProblemDuplicate,
+    createProblemWithEvolution,
     discardProblem,
     getProblemsByPatient,
     getProblemTransitions,
     promoteProblem,
     type PatientProblem,
     type ProblemCategory,
+    type ProblemVerificationStatus,
     type ProblemTransitionEvent,
 } from '@/lib/clinical-problems-api';
+import SnomedAutocomplete, { type SnomedHit } from './SnomedAutocomplete';
 
 interface Props {
     patientId: string;
@@ -20,15 +23,6 @@ interface Props {
 }
 
 type CodingFilter = 'all' | 'coded' | 'uncoded';
-
-function buildProblemDescription(currentIllness: string, assessment: string, plan: string): string | undefined {
-    const blocks: string[] = [];
-    if (currentIllness.trim()) blocks.push(`ENFERMEDAD ACTUAL\n${currentIllness.trim()}`);
-    if (assessment.trim()) blocks.push(`IMPRESION DIAGNOSTICA\n${assessment.trim()}`);
-    if (plan.trim()) blocks.push(`PLAN\n${plan.trim()}`);
-    if (blocks.length === 0) return undefined;
-    return blocks.join('\n\n');
-}
 
 function normalizeCodingFilter(value: string | null): CodingFilter {
     if (value === 'coded' || value === 'uncoded' || value === 'all') {
@@ -47,13 +41,22 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
     const [saving, setSaving] = useState(false);
 
     const [title, setTitle] = useState('');
+    const [snomedCode, setSnomedCode] = useState(''); // conceptId
+    const [snomedTerm, setSnomedTerm] = useState('');  // display term
+    const [snomedResetKey, setSnomedResetKey] = useState(0);
+    const [icd10Code, setIcd10Code] = useState('');
+    const [icd11Code, setIcd11Code] = useState('');
     const [currentIllness, setCurrentIllness] = useState('');
+    const [objective, setObjective] = useState('');
     const [assessment, setAssessment] = useState('');
     const [plan, setPlan] = useState('');
     const [onsetDate, setOnsetDate] = useState(new Date().toISOString().split('T')[0]);
-    const [category, setCategory] = useState<ProblemCategory>('symptomatic');
+    const [category, setCategory] = useState<ProblemCategory>('encounter_diagnosis');
+    const [verificationStatus, setVerificationStatus] = useState<ProblemVerificationStatus>('provisional');
     const codingFilter = normalizeCodingFilter(searchParams.get('coding'));
     const [currentIllnessResetKey, setCurrentIllnessResetKey] = useState(0);
+    const [duplicateWarning, setDuplicateWarning] = useState<PatientProblem | null>(null);
+    const [recurrenceOfProblemId, setRecurrenceOfProblemId] = useState<string | undefined>(undefined);
 
     const [transitionProblemId, setTransitionProblemId] = useState<string | null>(null);
     const [transitions, setTransitions] = useState<ProblemTransitionEvent[]>([]);
@@ -63,6 +66,8 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
     const [promoteTitle, setPromoteTitle] = useState('');
     const [promoteReason, setPromoteReason] = useState('');
     const [promoteSnomedCode, setPromoteSnomedCode] = useState('');
+    const [promoteSnomedTerm, setPromoteSnomedTerm] = useState('');
+    const [promoteSnomedResetKey, setPromoteSnomedResetKey] = useState(0);
     const [promoteIcd10Code, setPromoteIcd10Code] = useState('');
     const [promoteIcd11Code, setPromoteIcd11Code] = useState('');
 
@@ -109,43 +114,86 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
 
     const activeProblems = useMemo(
         () => problems
-            .filter((problem) => problem.clinicalStatus === 'active' && problem.category !== 'chronic')
+            .filter((problem) => (['active', 'recurrence'] as string[]).includes(problem.clinicalStatus) && problem.category !== 'problem_list_item')
             .filter(byCodingFilter),
         [problems, codingFilter],
     );
 
     const chronicProblems = useMemo(
         () => problems
-            .filter((problem) => problem.category === 'chronic' && problem.clinicalStatus !== 'resolved')
+            .filter((problem) => problem.category === 'problem_list_item' && problem.clinicalStatus !== 'resolved')
             .filter(byCodingFilter),
         [problems, codingFilter],
     );
+
+    function handleSnomedChange(hit: SnomedHit | null) {
+        const code = hit?.conceptId ?? '';
+        const term = hit?.term ?? '';
+        setSnomedCode(code);
+        setSnomedTerm(term);
+        if (code) {
+            void runDuplicateCheck(code, icd10Code.trim(), icd11Code.trim());
+        } else {
+            setDuplicateWarning(null);
+        }
+    }
+
+    async function runDuplicateCheck(snomed: string, icd10: string, icd11: string) {
+        if (!snomed && !icd10 && !icd11) return;
+        setDuplicateWarning(null);
+        try {
+            const dup = await checkProblemDuplicate(patientId, snomed || undefined, icd10 || undefined, icd11 || undefined);
+            setDuplicateWarning(dup);
+        } catch {
+            // non-blocking — dedup check failure should not prevent form submission
+            setDuplicateWarning(null);
+        }
+    }
 
     async function handleCreateProblem() {
         if (!title.trim()) {
             toast.error('El título del problema es obligatorio.');
             return;
         }
+        if (!snomedCode.trim()) {
+            toast.error('El código SNOMED es obligatorio.');
+            return;
+        }
 
         setSaving(true);
         try {
-            const description = buildProblemDescription(currentIllness, assessment, plan);
-            await createProblem({
+            await createProblemWithEvolution({
                 patientId,
                 title: title.trim(),
-                description,
-                onsetDate,
                 category,
-                clinicalStatus: 'active',
-                status: category === 'chronic' ? 'chronic' : 'active',
+                verificationStatus,
+                clinicalStatus: recurrenceOfProblemId ? 'recurrence' : 'active',
+                snomedCode: snomedCode.trim(),
+                icd10Code: icd10Code.trim() || undefined,
+                icd11Code: icd11Code.trim() || undefined,
+                onsetDate,
+                recurrenceOfProblemId,
+                subjective: currentIllness || undefined,
+                objective: objective || undefined,
+                assessment: assessment || undefined,
+                plan: plan || undefined,
             });
 
             toast.success('Problema y registro clínico creados correctamente.');
             setTitle('');
+            setSnomedCode('');
+            setSnomedTerm('');
+            setSnomedResetKey((k) => k + 1);
+            setIcd10Code('');
+            setIcd11Code('');
             setCurrentIllness('');
+            setObjective('');
             setAssessment('');
             setPlan('');
-            setCategory('symptomatic');
+            setCategory('encounter_diagnosis');
+            setVerificationStatus('provisional');
+            setDuplicateWarning(null);
+            setRecurrenceOfProblemId(undefined);
             setCurrentIllnessResetKey((current) => current + 1);
             await loadProblems();
         } catch (error: any) {
@@ -160,6 +208,8 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
         setPromoteTitle(problem.title);
         setPromoteReason('Promoción desde hoja de paciente');
         setPromoteSnomedCode('');
+        setPromoteSnomedTerm('');
+        setPromoteSnomedResetKey((k) => k + 1);
         setPromoteIcd10Code('');
         setPromoteIcd11Code('');
     }
@@ -169,6 +219,8 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
         setPromoteTitle('');
         setPromoteReason('');
         setPromoteSnomedCode('');
+        setPromoteSnomedTerm('');
+        setPromoteSnomedResetKey((k) => k + 1);
         setPromoteIcd10Code('');
         setPromoteIcd11Code('');
     }
@@ -184,7 +236,7 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
         try {
             await promoteProblem(promoteProblemTarget.id, {
                 newTitle: promoteTitle.trim(),
-                newCategory: 'chronic',
+                newCategory: 'problem_list_item',
                 newClinicalStatus: 'active',
                 snomedCode: promoteSnomedCode.trim() || undefined,
                 icd10Code: promoteIcd10Code.trim() || undefined,
@@ -250,7 +302,7 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
     }
 
     return (
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-6">
+        <section className="space-y-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <header className="space-y-2">
                 <h2 className="text-xl font-semibold text-slate-900">Problemas del paciente</h2>
                 <p className="text-sm text-slate-600">
@@ -258,42 +310,171 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
                 </p>
             </header>
 
-            <div className="grid gap-3 md:grid-cols-2">
-                <Field label="Problema / motivo de consulta">
-                    <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: Cefalea tensional" />
-                </Field>
-                <Field label="Categoría inicial">
-                    <select className="input" value={category} onChange={(e) => setCategory(e.target.value as ProblemCategory)}>
-                        <option value="symptomatic">Sintomático</option>
-                        <option value="acute">Agudo</option>
-                        <option value="chronic">Crónico</option>
-                    </select>
-                </Field>
-                <Field label="Fecha de inicio">
-                    <input type="date" className="input" value={onsetDate} onChange={(e) => setOnsetDate(e.target.value)} />
+            <section className="space-y-5 rounded-2xl bg-slate-50/70 p-4 sm:p-5">
+                <div className="grid gap-3 md:grid-cols-2">
+                    <Field label="Problema / motivo de consulta">
+                        <input
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Ej: Cefalea tensional"
+                        />
+                    </Field>
+                    <Field label="Categoría">
+                        <select
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={category}
+                            onChange={(e) => setCategory(e.target.value as ProblemCategory)}
+                        >
+                            <option value="encounter_diagnosis">Diagnóstico del encuentro</option>
+                            <option value="problem_list_item">Problema longitudinal</option>
+                            <option value="health_concern">Preocupación de salud</option>
+                        </select>
+                    </Field>
+                    <Field label="Estado de verificación">
+                        <select
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={verificationStatus}
+                            onChange={(e) => setVerificationStatus(e.target.value as ProblemVerificationStatus)}
+                        >
+                            <option value="provisional">Presuntivo</option>
+                            <option value="differential">Diagnóstico diferencial</option>
+                            <option value="confirmed">Confirmado</option>
+                        </select>
+                    </Field>
+                    <Field label="Fecha de inicio">
+                        <input
+                            type="date"
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={onsetDate}
+                            onChange={(e) => setOnsetDate(e.target.value)}
+                        />
+                    </Field>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                    <Field label="SNOMED CT *">
+                        <SnomedAutocomplete
+                            value={snomedCode}
+                            onChange={handleSnomedChange}
+                            resetKey={snomedResetKey}
+                            placeholder="Buscar diagnóstico…"
+                            required
+                        />
+                    </Field>
+                    <Field label="ICD-10 (opcional)">
+                        <input
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={icd10Code}
+                            onChange={(e) => setIcd10Code(e.target.value)}
+                            onBlur={() => runDuplicateCheck(snomedCode.trim(), icd10Code.trim(), icd11Code.trim())}
+                            placeholder="Ej: R51"
+                        />
+                    </Field>
+                    <Field label="ICD-11 (opcional)">
+                        <input
+                            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                            value={icd11Code}
+                            onChange={(e) => setIcd11Code(e.target.value)}
+                            onBlur={() => runDuplicateCheck(snomedCode.trim(), icd10Code.trim(), icd11Code.trim())}
+                            placeholder="Ej: 8A80.0"
+                        />
+                    </Field>
+                </div>
+
+                {duplicateWarning && (
+                    <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm space-y-2">
+                        <p className="font-semibold text-amber-800">
+                            ⚠ Problema similar activo: <span className="font-bold">{duplicateWarning.title}</span>
+                        </p>
+                        <p className="text-amber-700 text-xs">
+                            Encontrado con el mismo código. Podés continuar como nuevo problema, registrarlo como recidiva del existente, o cancelar.
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                className="rounded-md bg-amber-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-800"
+                                onClick={() => {
+                                    setRecurrenceOfProblemId(duplicateWarning.id);
+                                    setDuplicateWarning(null);
+                                    toast('Registrando como recidiva del problema existente.', { icon: '🔄' });
+                                }}
+                            >
+                                Registrar como recidiva
+                            </button>
+                            <button
+                                type="button"
+                                className="rounded-md bg-white border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                                onClick={() => setDuplicateWarning(null)}
+                            >
+                                Crear como nuevo problema
+                            </button>
+                        </div>
+                        {recurrenceOfProblemId && (
+                            <p className="text-xs text-amber-700 font-medium">
+                                Recidiva del problema ID: {recurrenceOfProblemId}
+                                {' '}
+                                <button
+                                    type="button"
+                                    className="underline text-amber-900 ml-1"
+                                    onClick={() => setRecurrenceOfProblemId(undefined)}
+                                >
+                                    Quitar
+                                </button>
+                            </p>
+                        )}
+                    </div>
+                )}
+
+             
+
+                <RichTextEditorField
+                    label="Enfermedad actual"
+                    helper="Texto rico para anamnesis breve y relato clínico de la consulta actual."
+                    placeholder={"MC: ...\nEA: ..."}
+                    resetKey={currentIllnessResetKey}
+                    onChange={setCurrentIllness}
+                />
+
+                <Field label="Examen físico / Hallazgos objetivos">
+                    <textarea
+                        className="min-h-20 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                        value={objective}
+                        onChange={(e) => setObjective(e.target.value)}
+                        placeholder="Signos vitales, hallazgos del examen físico"
+                    />
                 </Field>
                 <Field label="Impresión diagnóstica">
-                    <textarea className="input min-h-24" value={assessment} onChange={(e) => setAssessment(e.target.value)} placeholder="Dx presuntivo o definitivo" />
+                    <textarea
+                        className="min-h-24 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                        value={assessment}
+                        onChange={(e) => setAssessment(e.target.value)}
+                        placeholder="Dx presuntivo o definitivo"
+                    />
                 </Field>
-            </div>
 
-            <RichTextEditorField
-                label="Enfermedad actual"
-                helper="Texto rico para anamnesis breve y relato clínico de la consulta actual."
-                placeholder={"MC: ...\nEA: ..."}
-                resetKey={currentIllnessResetKey}
-                onChange={setCurrentIllness}
-            />
+                <Field label="Plan">
+                    <textarea
+                        className="min-h-28 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 outline-none transition focus:border-slate-500"
+                        value={plan}
+                        onChange={(e) => setPlan(e.target.value)}
+                        placeholder="Conducta, medicación, estudios, controles y educación"
+                    />
+                </Field>
 
-            <Field label="Plan">
-                <textarea className="input min-h-28" value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="Conducta, medicación, estudios, controles y educación" />
-            </Field>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-2">
+                    <p className="text-xs text-slate-500">
+                        {recurrenceOfProblemId
+                            ? 'Se registrará como recidiva del problema existente.'
+                            : 'Se registrarán problema, evolución clínica y plan terapéutico en la misma acción.'}
+                    </p>
+                    <button disabled={saving} onClick={handleCreateProblem} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">
+                        {saving ? 'Guardando...' : 'Registrar problema de la consulta'}
+                    </button>
+                </div>
+            </section>
 
-            <button disabled={saving} onClick={handleCreateProblem} className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60">
-                {saving ? 'Guardando...' : 'Registrar problema de la consulta'}
-            </button>
-
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="rounded-xl bg-slate-50/80 p-3.5">
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-2">
                     Filtro por codificación
                 </p>
@@ -325,8 +506,8 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
             <div className="grid gap-4 lg:grid-cols-2">
                 <ProblemColumn
                     title="Activos"
-                    subtitle="Agudos y sintomáticos en curso"
-                    emptyText="No hay problemas activos no crónicos."
+                    subtitle="Diagnósticos del encuentro y preocupaciones de salud en curso"
+                    emptyText="No hay problemas activos."
                     loading={loading}
                     items={activeProblems}
                     onPromote={openPromoteModal}
@@ -337,9 +518,9 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
                 />
 
                 <ProblemColumn
-                    title="Crónicos"
-                    subtitle="Seguimiento longitudinal"
-                    emptyText="No hay problemas crónicos activos."
+                    title="Longitudinales"
+                    subtitle="Lista de problemas de seguimiento crónico"
+                    emptyText="No hay problemas longitudinales activos."
                     loading={loading}
                     items={chronicProblems}
                     onPromote={openPromoteModal}
@@ -351,7 +532,7 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
             </div>
 
             {transitionProblemId && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-2">
+                <div className="space-y-2 rounded-xl bg-slate-50/80 p-4">
                     <h3 className="font-medium text-slate-800">Historial de transiciones del problema</h3>
                     {loadingTransitions && <p className="text-sm text-slate-500">Cargando historial...</p>}
                     {!loadingTransitions && transitions.length === 0 && (
@@ -360,7 +541,7 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
                     {!loadingTransitions && transitions.length > 0 && (
                         <ul className="space-y-2">
                             {transitions.map((event) => (
-                                <li key={event.id} className="rounded-md bg-white border border-slate-200 p-2 text-sm">
+                                <li key={event.id} className="rounded-lg border border-slate-200/80 bg-white p-2 text-sm">
                                     <div className="font-medium text-slate-800">{event.transitionType}</div>
                                     <div className="text-slate-600">
                                         {event.fromTitle || '-'} -&gt; {event.toTitle || '-'}
@@ -397,11 +578,14 @@ export default function PatientProblemsPanel({ patientId, onProblemsChanged }: P
                         </Field>
                         <div className="grid gap-3 md:grid-cols-3">
                             <Field label="SNOMED (opcional)">
-                                <input
-                                    className="input"
+                                <SnomedAutocomplete
                                     value={promoteSnomedCode}
-                                    onChange={(e) => setPromoteSnomedCode(e.target.value)}
-                                    placeholder="Ej: 44054006"
+                                    onChange={(hit) => {
+                                        setPromoteSnomedCode(hit?.conceptId ?? '');
+                                        setPromoteSnomedTerm(hit?.term ?? '');
+                                    }}
+                                    resetKey={promoteSnomedResetKey}
+                                    placeholder="Buscar diagnóstico…"
                                 />
                             </Field>
                             <Field label="ICD-10 (opcional)">
@@ -510,7 +694,7 @@ function ProblemColumn({
     showPromote: boolean;
 }) {
     return (
-        <section className="rounded-lg border border-slate-200 p-4 space-y-3">
+        <section className="space-y-3 rounded-xl bg-slate-50/80 p-4">
             <div>
                 <h3 className="font-semibold text-slate-800">{title}</h3>
                 <p className="text-xs text-slate-500">{subtitle}</p>
@@ -523,7 +707,7 @@ function ProblemColumn({
             {!loading && items.length > 0 && (
                 <ul className="space-y-2">
                     {items.map((problem) => (
-                        <li key={problem.id} className="rounded-md border border-slate-200 p-3 bg-slate-50 space-y-2">
+                        <li key={problem.id} className="space-y-2 rounded-lg border border-slate-200/80 bg-white p-3">
                             <div className="flex items-start gap-2">
                                 <div className="flex-1">
                                     <p className="font-medium text-slate-900">{problem.title}</p>
@@ -549,12 +733,15 @@ function ProblemColumn({
                                     )}
                                 </div>
                                 <span className="rounded-full bg-white border border-slate-300 px-2 py-1 text-xs text-slate-700">
-                                    {problem.category}
+                                    {problem.category === 'encounter_diagnosis' ? 'Dx del encuentro'
+                                        : problem.category === 'problem_list_item' ? 'Longitudinal'
+                                        : problem.category === 'health_concern' ? 'Preocupación'
+                                        : problem.category}
                                 </span>
                             </div>
 
                             <div className="flex flex-wrap gap-2">
-                                {showPromote && problem.category !== 'chronic' && (
+                                {showPromote && problem.category !== 'problem_list_item' && (
                                     <button
                                         className="rounded-md bg-indigo-600 px-2 py-1 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
                                         disabled={disableActions || problem.isThreadLocked}
@@ -609,6 +796,7 @@ function RichTextEditorField({
 }) {
     const editorRef = useRef<HTMLDivElement | null>(null);
     const [isEmpty, setIsEmpty] = useState(true);
+    const toolbarButtonClass = 'rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400 hover:bg-slate-50';
 
     useEffect(() => {
         const editor = editorRef.current;
@@ -648,37 +836,39 @@ function RichTextEditorField({
                 {helper && <p className="text-xs text-slate-500">{helper}</p>}
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                <button type="button" className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50" onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('bold')}>
-                    Negrita
-                </button>
-                <button type="button" className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50" onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('italic')}>
-                    Cursiva
-                </button>
-                <button type="button" className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50" onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('insertUnorderedList')}>
-                    Lista
-                </button>
-                <button type="button" className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50" onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('insertOrderedList')}>
-                    Numerada
-                </button>
-                <button type="button" className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50" onClick={clearEditor}>
-                    Limpiar
-                </button>
-            </div>
+            <div className="overflow-hidden rounded-xl border border-slate-300 bg-white shadow-sm">
+                <div className="flex flex-wrap gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2">
+                    <button type="button" className={toolbarButtonClass} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('bold')}>
+                        Negrita
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('italic')}>
+                        Cursiva
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('insertUnorderedList')}>
+                        Lista
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onMouseDown={(event) => event.preventDefault()} onClick={() => runCommand('insertOrderedList')}>
+                        Numerada
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={clearEditor}>
+                        Limpiar
+                    </button>
+                </div>
 
-            <div className="relative">
-                {isEmpty && (
-                    <p className="pointer-events-none absolute left-3 top-3 whitespace-pre-line text-sm text-slate-400">
-                        {placeholder}
-                    </p>
-                )}
-                <div
-                    ref={editorRef}
-                    contentEditable
-                    suppressContentEditableWarning
-                    onInput={syncValue}
-                    className="min-h-32 rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 focus:border-slate-500 focus:outline-none"
-                />
+                <div className="relative">
+                    {isEmpty && (
+                        <p className="pointer-events-none absolute left-4 top-3 whitespace-pre-line text-sm leading-6 text-slate-400">
+                            {placeholder}
+                        </p>
+                    )}
+                    <div
+                        ref={editorRef}
+                        contentEditable
+                        suppressContentEditableWarning
+                        onInput={syncValue}
+                        className="min-h-36 px-4 py-3 text-sm leading-6 text-slate-700 focus:outline-none"
+                    />
+                </div>
             </div>
         </div>
     );
