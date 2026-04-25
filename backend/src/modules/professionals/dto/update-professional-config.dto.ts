@@ -38,8 +38,8 @@ export class UpdateProfessionalConfigDto {
     acceptedInsurances?: string[];
 
     @IsOptional()
-    @IsObject()
-    weeklySchedule?: Record<string, any>;
+    @IsArray()
+    weeklySchedule?: any[];
 
     @IsOptional()
     @IsObject()

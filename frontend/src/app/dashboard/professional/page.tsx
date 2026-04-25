@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ProfessionalPortalGuard } from '../../../components/ProfessionalPortalGuard';
 import {
   getProfessionalTodayBoardAuto,
   patchAppointmentAttendance,
-  type AppointmentAttendanceApi,
 } from '@/app/actions/professionals';
+import { AppointmentAttendanceApi } from '@/app/actions/professional-action-types';
+import { PatientRegistrationForm } from '@/components/forms/PatientRegistrationForm';
+import { CalendarIcon, UserIcon, UsersIcon } from 'lucide-react';
 
 type AttendanceStatus = 'pendiente' | 'presente' | 'ausente';
 
@@ -23,16 +26,18 @@ interface TodayAppointment {
 }
 
 const statusStyles: Record<AttendanceStatus, string> = {
-  pendiente: 'bg-amber-100 text-amber-800',
-  presente: 'bg-emerald-100 text-emerald-800',
-  ausente: 'bg-rose-100 text-rose-800',
+  pendiente: 'border border-amber-200 bg-amber-50 text-amber-800',
+  presente: 'border border-emerald-200 bg-emerald-50 text-emerald-800',
+  ausente: 'border border-rose-200 bg-rose-50 text-rose-800',
 };
 
 export default function ProfessionalDashboardPage() {
+  const router = useRouter();
   const [appointments, setAppointments] = useState<TodayAppointment[]>([]);
   const [isLoadingBoard, setIsLoadingBoard] = useState(true);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isApiConnected, setIsApiConnected] = useState(false);
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
 
   useEffect(() => {
     const loadBoard = async () => {
@@ -98,79 +103,109 @@ export default function ProfessionalDashboardPage() {
 
   return (
     <ProfessionalPortalGuard>
-      <main className="min-h-screen bg-gradient-to-br from-emerald-50 via-lime-50 to-teal-50 py-10 px-4">
-        <div className="max-w-6xl mx-auto space-y-8">
-          <header className="rounded-2xl border border-emerald-200 bg-white/85 backdrop-blur p-6 shadow-sm">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-slate-900">Portal del Profesional</h1>
-                <p className="mt-1 text-slate-600">
-                  Gestión diaria de consultas, asistencia y preparación clínica.
+      <main className="min-h-screen bg-[linear-gradient(180deg,#f8fafc_0%,#f2f6f5_100%)] py-8 px-4 sm:py-10">
+        <div className="mx-auto max-w-6xl space-y-8">
+          <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panel clínico diario</p>
+                <h1 className="mt-3 text-[clamp(2rem,4vw,2.75rem)] font-bold leading-tight text-slate-900">Portal del Profesional</h1>
+                <p className="mt-2 text-slate-600">
+                  Gestioná consultas, asistencia y preparación clínica en una sola vista.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600">
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Agenda del día</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Seguimiento clínico</span>
+                  <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
+                    {isApiConnected ? 'Sincronización activa' : 'Modo local'}
+                  </span>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/dashboard/professional/agenda"
-                  className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700"
+              <div className="flex flex-wrap gap-3 lg:justify-end">
+                <button
+                  onClick={() => setShowWalkInModal(true)}
+                  className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
                 >
-                  Configurar agenda
+                  Alta de paciente
+                  {
+                    /* agrega Icono de una persona */
+
+                  }
+                  <UserIcon className="h-4 w-4" />
+                </button>
+                <Link
+                  href="/dashboard/professional/pacientes"
+                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                >
+                  Pacientes
+                  <UsersIcon className="h-4 w-4" />                  
                 </Link>
                 <Link
-                  href="/dashboard/professional/config"
-                  className="rounded-lg border border-emerald-300 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+                  href="/dashboard/professional/agenda"
+                  className="flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
                 >
-                  Configurar perfil
+                  Agenda
+                  <CalendarIcon className="h-4 w-4" />
+                </Link>
+                <Link
+                  href="/dashboard/professional/profile"
+                  className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
+                >
+                  Perfil
                 </Link>
               </div>
             </div>
           </header>
 
           <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <article className="rounded-xl border border-emerald-200 bg-white/90 p-4 shadow-sm">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Citas del día</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{appointments.length}</p>
+              <p className="mt-3 text-3xl font-bold leading-none text-slate-900">{appointments.length}</p>
             </article>
-            <article className="rounded-xl border border-emerald-200 bg-white/90 p-4 shadow-sm">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Presentes</p>
-              <p className="mt-2 text-2xl font-bold text-emerald-700">{adherence.attended}</p>
+              <p className="mt-3 text-3xl font-bold leading-none text-emerald-600">{adherence.attended}</p>
             </article>
-            <article className="rounded-xl border border-emerald-200 bg-white/90 p-4 shadow-sm">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Ausentes</p>
-              <p className="mt-2 text-2xl font-bold text-rose-700">{adherence.absent}</p>
+              <p className="mt-3 text-3xl font-bold leading-none text-rose-600">{adherence.absent}</p>
             </article>
-            <article className="rounded-xl border border-emerald-200 bg-white/90 p-4 shadow-sm">
+            <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-500">Adherencia</p>
-              <p className="mt-2 text-2xl font-bold text-slate-900">{adherence.percentage}%</p>
+              <p className="mt-3 text-3xl font-bold leading-none text-slate-900">{adherence.percentage}%</p>
             </article>
           </section>
 
           {isLoadingBoard && (
-            <section className="rounded-xl border border-emerald-200 bg-white/90 p-4 text-sm text-slate-600">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
               Cargando agenda del día...
             </section>
           )}
 
           {statusMessage && (
-            <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
               {statusMessage}
             </section>
           )}
 
-          <section className="rounded-2xl border border-emerald-200 bg-white/90 shadow-sm overflow-hidden">
-            <div className="border-b border-emerald-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-900">Agenda de hoy</h2>
-              <p className="text-sm text-slate-500">
-                Revisá al paciente antes de llamarlo y actualizá su estado de asistencia.
-              </p>
+          <section className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            <div className="flex flex-col gap-2 border-b border-slate-200 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-slate-900">Agenda de hoy</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  Revisá al paciente antes de llamarlo y actualizá su estado de asistencia.
+                </p>
+              </div>
+              <p className="text-sm text-slate-500">{appointments.length} citas registradas</p>
             </div>
-            <div className="divide-y divide-emerald-100/70">
+            <div className="divide-y divide-slate-100">
               {appointments.length === 0 && !isLoadingBoard && (
                 <article className="px-6 py-6 text-sm text-slate-600">
                   No hay citas para mostrar o la agenda no pudo sincronizarse.
                 </article>
               )}
               {appointments.map((appointment) => (
-                <article key={appointment.id} className="px-6 py-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <article key={appointment.id} className="px-6 py-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="space-y-1">
                     <p className="text-sm font-semibold text-slate-900">
                       {appointment.time} · {appointment.patientName} ({appointment.age})
@@ -190,7 +225,7 @@ export default function ProfessionalDashboardPage() {
                         onChange={(event) => {
                           void updateStatus(appointment.id, event.target.value as AttendanceStatus);
                         }}
-                        className="ml-2 rounded-md border border-emerald-300 bg-white px-2 py-1 text-xs text-slate-700"
+                        className="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
                       >
                         <option value="pendiente">Pendiente</option>
                         <option value="presente">Presente</option>
@@ -199,7 +234,7 @@ export default function ProfessionalDashboardPage() {
                     </label>
                     <Link
                       href={`/dashboard/professional/pacientes/${appointment.patientId}`}
-                      className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-medium text-white hover:bg-emerald-800"
+                      className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
                     >
                       Revisar paciente
                     </Link>
@@ -208,8 +243,46 @@ export default function ProfessionalDashboardPage() {
               ))}
             </div>
           </section>
+
+          <footer className="border-t border-slate-200 pt-6 text-sm text-slate-500">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p>HEED · Portal del Profesional</p>
+              <p>Vista diaria de atencion y seguimiento clinico</p>
+            </div>
+          </footer>
         </div>
       </main>
+
+      {showWalkInModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowWalkInModal(false); }}
+        >
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-50 shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4">
+              <div>
+                <h2 className="font-semibold text-slate-800">Alta espontánea</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Registre un paciente que se presenta sin turno previo</p>
+              </div>
+              <button
+                onClick={() => setShowWalkInModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+                aria-label="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-2">
+              <PatientRegistrationForm
+                onSuccess={(patientId) => {
+                  setShowWalkInModal(false);
+                  router.push(`/dashboard/professional/pacientes/${patientId}`);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </ProfessionalPortalGuard>
   );
 }

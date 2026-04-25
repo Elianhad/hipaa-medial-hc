@@ -52,17 +52,31 @@ export class PatientsService {
       );
     }
 
-    const identity = this.shouldBypassPatientValidation()
-      ? this.getBypassIdentity(dto.dni, dto.sex as SexType)
-      : await this.renaperService.lookup(dto.dni, dto.sex as SexType);
+    let firstName = dto.firstName;
+    let lastName = dto.lastName;
+    let birthDate = dto.birthDate;
+    let photoUrl = dto.photoUrl;
+    let identityVerified = Boolean(dto.physicalDniVerified);
+
+    if (!firstName || !lastName || !birthDate) {
+      const identity = this.shouldBypassPatientValidation()
+        ? this.getBypassIdentity(dto.dni, dto.sex as SexType)
+        : await this.renaperService.lookup(dto.dni, dto.sex as SexType);
+
+      firstName = identity.firstName;
+      lastName = identity.lastName;
+      birthDate = identity.birthDate;
+      photoUrl = identity.photoUrl;
+      identityVerified = identity.verified;
+    }
 
     const patient = this.patientRepo.create({
       ...dto,
-      firstName: identity.firstName,
-      lastName: identity.lastName,
-      birthDate: identity.birthDate,
-      photoUrl: identity.photoUrl,
-      identityVerified: identity.verified,
+      firstName,
+      lastName,
+      birthDate,
+      photoUrl,
+      identityVerified,
     });
 
     return this.patientRepo.save(patient);

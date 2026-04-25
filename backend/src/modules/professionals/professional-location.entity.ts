@@ -45,10 +45,10 @@ export class ProfessionalLocation {
     @Column({
         name: 'weekly_schedule',
         type: 'jsonb',
-        default: '{}',
+        default: '[]',
         comment: 'Horarios de atención por día',
     })
-    weeklySchedule: Record<string, any>;
+    weeklySchedule: any[];
 
     @Column({
         name: 'appointment_rules',

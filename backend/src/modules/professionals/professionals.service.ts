@@ -140,6 +140,8 @@ export class ProfessionalsService {
       weeklySchedule: professional.scheduleConfig?.weeklySchedule ?? {},
       appointmentRules: professional.scheduleConfig?.appointmentRules ?? {},
       scheduleConfig: professional.scheduleConfig,
+      licenseNumber: professional.licenseNumber,
+      insurances: professional.scheduleConfig?.acceptedInsurances ?? [],
     };
   }
 

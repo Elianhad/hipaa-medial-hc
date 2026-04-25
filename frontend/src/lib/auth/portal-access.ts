@@ -48,7 +48,7 @@ export const LANDING_PORTALS: LandingPortal[] = [
             { label: 'Dashboard', href: '/dashboard/professional' },
             { label: 'Agenda', href: '/dashboard/professional/agenda' },
             { label: 'Pacientes', href: '/dashboard/professional/pacientes' },
-            { label: 'Configuración', href: '/dashboard/professional/config' },
+            { label: 'Configuración', href: '/dashboard/professional/profile' },
         ],
     },
     {

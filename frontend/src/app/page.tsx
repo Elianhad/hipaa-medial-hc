@@ -46,55 +46,100 @@ export default function HomePage() {
 
     return (
         <main className="min-h-screen bg-slate-950 text-white">
-            {/* Hero Section */}
-            <section className="relative overflow-hidden pt-32 pb-20">
+            <section className="relative overflow-hidden pt-28 pb-24">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.22),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(132,204,22,0.18),transparent_24%),linear-gradient(180deg,#020617_0%,#0f172a_100%)]" />
-                <div className="relative mx-auto max-w-6xl px-6">
-                    <div className="max-w-3xl">
-                        <p className="text-sm font-medium uppercase tracking-[0.28em] text-sky-300">
-                            Plataforma de Salud Moderna
-                        </p>
-                        <h1 className="mt-6 text-6xl font-bold tracking-tight text-white sm:text-7xl">
-                            Historia clínica electrónica inteligente para todos.
-                        </h1>
-                        <p className="mt-6 max-w-2xl text-xl leading-8 text-slate-300">
-                            Conecta pacientes, profesionales y organizaciones en una plataforma segura,
-                            cumpliendo HIPAA y estándares internacionales de salud digital.
-                        </p>
+                <div className="absolute inset-0 landing-grid opacity-40" />
 
-                        {/* Primary CTAs */}
-                        <div className="mt-10 flex flex-wrap gap-4">
-                            <Link
-                                href={user ? '/dashboard' : '/login'}
-                                className="px-8 py-4 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold transition"
-                            >
-                                {user ? 'Ir a mi dashboard' : 'Ingresar'}
-                            </Link>
-                            <Link
-                                href="/#portals"
-                                className="px-8 py-4 rounded-lg border border-white/20 hover:border-white/40 text-white font-semibold transition"
-                            >
-                                Conocer Portales
-                            </Link>
+                <div className="relative mx-auto max-w-7xl px-4 sm:px-6">
+                    <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+                        <div className="max-w-3xl">
+                            <p className="text-sm font-medium uppercase tracking-[0.28em] text-sky-300">
+                                Plataforma de Salud Moderna
+                            </p>
+                            <h1 className="mt-6 text-5xl font-bold tracking-tight text-white sm:text-6xl xl:text-7xl">
+                                Historia clínica electrónica inteligente para todos.
+                            </h1>
+                            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
+                                Conecta pacientes, profesionales y organizaciones en una plataforma segura,
+                                cumpliendo HIPAA y estándares internacionales de salud digital.
+                            </p>
+
+                            <div className="mt-10 flex flex-wrap gap-4">
+                                <Link
+                                    href={user ? '/dashboard' : '/login'}
+                                    className="px-8 py-4 rounded-lg bg-sky-500 hover:bg-sky-600 text-white font-semibold transition"
+                                >
+                                    {user ? 'Ir a mi dashboard' : 'Ingresar'}
+                                </Link>
+                                <Link
+                                    href="/#portals"
+                                    className="px-8 py-4 rounded-lg border border-white/20 hover:border-white/40 text-white font-semibold transition"
+                                >
+                                    Conocer Portales
+                                </Link>
+                            </div>
+
+                            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                                <div className="card-soft rounded-2xl p-4">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Seguridad</p>
+                                    <p className="mt-2 text-sm text-slate-200">Cumplimiento HIPAA y control de acceso robusto.</p>
+                                </div>
+                                <div className="card-soft rounded-2xl p-4">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Operación</p>
+                                    <p className="mt-2 text-sm text-slate-200">Agenda, pacientes y evoluciones en un único flujo.</p>
+                                </div>
+                                <div className="card-soft rounded-2xl p-4">
+                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Interoperabilidad</p>
+                                    <p className="mt-2 text-sm text-slate-200">Integración basada en FHIR para escalar sin fricción.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="card-soft rounded-3xl p-6 sm:p-8">
+                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Panorama operativo</p>
+                            <h2 className="mt-3 text-2xl font-semibold text-white">Confianza clínica en tiempo real</h2>
+                            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                                <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                    <p className="text-3xl font-bold text-sky-300">3</p>
+                                    <p className="mt-2 text-sm text-slate-300">Portales especializados</p>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                                    <p className="text-3xl font-bold text-emerald-300">100%</p>
+                                    <p className="mt-2 text-sm text-slate-300">Flujos auditables</p>
+                                </div>
+                                <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 sm:col-span-2">
+                                    <p className="text-sm text-slate-200 leading-7">
+                                        Una interfaz pensada para que cada actor del sistema de salud trabaje con
+                                        claridad, trazabilidad y foco clínico.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Features Section */}
             <section id="features" className="py-20 bg-slate-900/50 border-y border-white/10">
-                <div className="mx-auto max-w-6xl px-6">
-                    <div className="max-w-2xl mb-16">
-                        <h2 className="text-4xl font-bold text-white">Características</h2>
-                        <p className="mt-4 text-lg text-slate-300">
-                            Una plataforma completa diseñada para los tres actores principales del sistema de salud.
+                <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                    <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-end">
+                        <div className="max-w-2xl">
+                            <h2 className="text-4xl font-bold text-white">Características</h2>
+                            <p className="mt-4 text-lg text-slate-300">
+                                Una plataforma completa diseñada para los tres actores principales del sistema de salud.
+                            </p>
+                        </div>
+                        <p className="text-slate-300 leading-7">
+                            Mejoramos la estructura visual para que los bloques sean más legibles y navegables sin perder el lenguaje actual de la marca.
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
                         {features.map((feature, idx) => (
-                            <div key={idx} className="rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur hover:bg-white/10 transition">
-                                <div className="text-4xl mb-4">{feature.icon}</div>
+                            <div key={idx} className="card-soft card-soft-hover rounded-2xl p-8">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-4xl">{feature.icon}</div>
+                                    <span className="text-xs font-semibold tracking-[0.2em] text-slate-500">0{idx + 1}</span>
+                                </div>
                                 <h3 className="text-xl font-semibold text-white">{feature.title}</h3>
                                 <p className="mt-3 text-slate-300">{feature.description}</p>
                             </div>
@@ -103,13 +148,17 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Portals Section */}
             <section id="portals" className="py-20">
-                <div className="mx-auto max-w-6xl px-6">
-                    <div className="max-w-2xl mb-16">
-                        <h2 className="text-4xl font-bold text-white">Portales Disponibles</h2>
-                        <p className="mt-4 text-lg text-slate-300">
-                            Accede al portal que corresponde a tu rol en el sistema de salud.
+                <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between mb-16">
+                        <div className="max-w-2xl">
+                            <h2 className="text-4xl font-bold text-white">Portales Disponibles</h2>
+                            <p className="mt-4 text-lg text-slate-300">
+                                Accede al portal que corresponde a tu rol en el sistema de salud.
+                            </p>
+                        </div>
+                        <p className="text-sm text-slate-400 max-w-xl">
+                            El acceso se adapta a tu sesión y rol actual, manteniendo una navegación coherente desde la misma portada.
                         </p>
                     </div>
 
@@ -119,7 +168,7 @@ export default function HomePage() {
                             return (
                                 <div
                                     key={portal.href}
-                                    className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur flex flex-col hover:bg-white/10 transition"
+                                    className="card-soft card-soft-hover rounded-3xl p-8 flex flex-col"
                                 >
                                     <div className={`h-2 w-24 rounded-full bg-gradient-to-r ${portal.accent}`} />
                                     <h3 className="mt-6 text-2xl font-semibold text-white">
@@ -168,39 +217,38 @@ export default function HomePage() {
                 </div>
             </section>
 
-            {/* Public Links */}
             <section className="py-16 bg-slate-900/30 border-t border-white/10">
-                <div className="mx-auto max-w-6xl px-6">
-                    <div className="grid md:grid-cols-1 gap-12 items-start">
-                        {/* Public portals */}
-                        <div>
-                            <h3 className="text-2xl font-semibold text-white mb-3">Portales Públicos</h3>
-                            <p className="text-slate-400 mb-6 text-sm">
-                                Páginas públicas de profesionales e instituciones — sin login requerido.
+                <div className="mx-auto max-w-7xl px-4 sm:px-6">
+                    <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] items-start">
+                        <div className="card-soft rounded-2xl p-7">
+                            <h3 className="text-2xl font-semibold text-white">Portales Públicos</h3>
+                            <p className="text-slate-400 mt-4 text-sm leading-7">
+                                Páginas públicas de profesionales e instituciones sin login, diseñadas para orientar rápido y convertir en turnos.
                             </p>
-                            <div className="flex flex-col gap-4">
-                                <Link
-                                    href={`/booking/${PUBLIC_PROFESSIONAL_SLUG}`}
-                                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 p-5 transition"
-                                >
-                                    <h4 className="text-base font-semibold text-emerald-300">Profesional Independiente</h4>
-                                    <p className="mt-1 text-sm text-slate-300">Dr. Juan Fulano — Clínica Médica</p>
-                                    <p className="mt-2 text-xs text-slate-500">/booking/[profesional]</p>
-                                </Link>
-                                <Link
-                                    href={`/org/${PUBLIC_ORGANIZATION_SLUG}`}
-                                    className="rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 p-5 transition"
-                                >
-                                    <h4 className="text-base font-semibold text-orange-300">Organización</h4>
-                                    <p className="mt-1 text-sm text-slate-300">Portal público institucional</p>
-                                    <p className="mt-2 text-xs text-slate-500">/org/[institucion]</p>
-                                </Link>
-                            </div>
+                        </div>
+
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Link
+                                href={`/booking/${PUBLIC_PROFESSIONAL_SLUG}`}
+                                className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 p-5 transition"
+                            >
+                                <h4 className="text-base font-semibold text-emerald-300">Profesional Independiente</h4>
+                                <p className="mt-1 text-sm text-slate-300">Dr. Juan Fulano — Clínica Médica</p>
+                                <p className="mt-2 text-xs text-slate-500">/booking/[profesional]</p>
+                            </Link>
+                            <Link
+                                href={`/org/${PUBLIC_ORGANIZATION_SLUG}`}
+                                className="rounded-xl border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 p-5 transition"
+                            >
+                                <h4 className="text-base font-semibold text-orange-300">Organización</h4>
+                                <p className="mt-1 text-sm text-slate-300">Portal público institucional</p>
+                                <p className="mt-2 text-xs text-slate-500">/org/[institucion]</p>
+                            </Link>
                         </div>
                     </div>
                 </div>
             </section>
-            {/* Footer */}
+
             <footer className="border-t border-white/10 py-8 px-6 bg-slate-950">
                 <div className="mx-auto max-w-6xl text-center text-sm text-slate-500">
                     <p>© 2026 HEED. Plataforma de Historia Clínica Inteligente.</p>

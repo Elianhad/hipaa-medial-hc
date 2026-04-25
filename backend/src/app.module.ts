@@ -44,7 +44,7 @@ import { UsersModule } from './users/users.module';
         database: cfg.get<string>('database.name'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,       // always false — use migrations
-        migrationsRun: false,
+        migrationsRun: true,
         ssl: cfg.get<boolean>('database.ssl') ? { rejectUnauthorized: true } : false,
         extra: {
           // Connection pool

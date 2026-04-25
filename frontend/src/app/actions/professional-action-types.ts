@@ -35,8 +35,10 @@ export interface ProfessionalConfigResponse {
     consultationFee?: number;
     isPublic?: boolean;
     acceptedInsurances?: string[];
-    weeklySchedule?: Record<string, unknown>;
+    weeklySchedule?: any[];
     appointmentRules?: Record<string, unknown>;
+    licenseNumber: string;
+    insurances?: string[];
 }
 
 export interface ProfessionalConfigPatch {
@@ -46,7 +48,7 @@ export interface ProfessionalConfigPatch {
     consultationFee?: number;
     isPublic?: boolean;
     acceptedInsurances?: string[];
-    weeklySchedule?: Record<string, unknown>;
+    weeklySchedule?: any[];
     appointmentRules?: Record<string, unknown>;
 }
 
@@ -57,7 +59,7 @@ export interface ProfessionalLocation {
     name: string;
     address?: string;
     phone?: string;
-    weeklySchedule: Record<string, unknown>;
+    weeklySchedule: any[];
     appointmentRules: Record<string, unknown>;
     isMainLocation: boolean;
     isActive: boolean;
@@ -69,7 +71,7 @@ export interface CreateLocationPayload {
     name: string;
     address?: string;
     phone?: string;
-    weeklySchedule?: Record<string, unknown>;
+    weeklySchedule?: any[];
     appointmentRules?: Record<string, unknown>;
     isMainLocation?: boolean;
 }
@@ -78,7 +80,7 @@ export interface UpdateLocationPayload {
     name?: string;
     address?: string;
     phone?: string;
-    weeklySchedule?: Record<string, unknown>;
+    weeklySchedule?: any[];
     appointmentRules?: Record<string, unknown>;
     isMainLocation?: boolean;
     isActive?: boolean;

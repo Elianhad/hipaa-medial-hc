@@ -1,5 +1,6 @@
 import {
   IsString,
+  IsBoolean,
   IsEnum,
   IsEmail,
   IsOptional,
@@ -15,12 +16,25 @@ export class CreatePatientDto {
   @IsEnum(SexType)
   sex: SexType;
 
-  // The following fields are populated by MockRENAPERService
-  // and should not be set directly by the client
+  @IsString()
+  @IsOptional()
   firstName?: string;
+
+  @IsString()
+  @IsOptional()
   lastName?: string;
+
+  @IsString()
+  @IsOptional()
   birthDate?: string;
+
+  @IsString()
+  @IsOptional()
   photoUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  physicalDniVerified?: boolean;
 
   @IsEmail()
   @IsOptional()

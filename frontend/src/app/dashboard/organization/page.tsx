@@ -85,6 +85,7 @@ export default function OrganizationDashboardPage() {
                         {[
                             { href: '/dashboard/organization/agenda', label: '📅 Agenda', desc: 'Ver turnos de todos los profesionales' },
                             { href: '/dashboard/organization/staff', label: '👥 Staff', desc: 'Gestionar profesionales de la organización' },
+                            { href: '/dashboard/organization/pacientes', label: '🩺 Pacientes', desc: 'Registrar y gestionar pacientes' },
                             { href: '/dashboard/organization/billing', label: '🧾 Facturación', desc: 'Prestaciones, liquidaciones y auditoría' },
                         ].map((link) => (
                             <a

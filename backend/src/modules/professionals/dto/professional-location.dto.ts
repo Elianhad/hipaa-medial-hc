@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID, IsBoolean, IsObject } from 'class-validator';
+import { IsString, IsOptional, IsUUID, IsBoolean, IsObject, IsArray } from 'class-validator';
 
 export class CreateProfessionalLocationDto {
     @IsString()
@@ -13,8 +13,8 @@ export class CreateProfessionalLocationDto {
     phone?: string;
 
     @IsOptional()
-    @IsObject()
-    weeklySchedule?: Record<string, any>;
+    @IsArray()
+    weeklySchedule?: any[];
 
     @IsOptional()
     @IsObject()
@@ -39,8 +39,8 @@ export class UpdateProfessionalLocationDto {
     phone?: string;
 
     @IsOptional()
-    @IsObject()
-    weeklySchedule?: Record<string, any>;
+    @IsArray()
+    weeklySchedule?: any[];
 
     @IsOptional()
     @IsObject()
@@ -62,7 +62,7 @@ export class ProfessionalLocationResponseDto {
     name: string;
     address?: string;
     phone?: string;
-    weeklySchedule: Record<string, any>;
+    weeklySchedule: any[];
     appointmentRules: Record<string, any>;
     isMainLocation: boolean;
     isActive: boolean;

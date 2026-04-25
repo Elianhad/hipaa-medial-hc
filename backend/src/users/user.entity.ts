@@ -18,10 +18,10 @@ export class User {
   @Column()
   email: string;
 
-  @Column({ name: 'first_name', nullable: true, length: 100 })
+  @Column({ type: 'varchar', name: 'first_name', nullable: true, length: 100 })
   firstName: string | null;
 
-  @Column({ name: 'last_name', nullable: true, length: 100 })
+  @Column({ type: 'varchar', name: 'last_name', nullable: true, length: 100 })
   lastName: string | null;
 
   @Column({ name: 'is_active', default: true })
