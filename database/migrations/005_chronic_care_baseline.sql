@@ -337,29 +337,33 @@ CREATE OR REPLACE FUNCTION notify_prescription_fhir_sync()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   INSERT INTO integration_outbox (
-    aggregate_type, aggregate_id, event_type, payload
+    tenant_id, aggregate_type, aggregate_id, event_type, payload
   )
   VALUES (
-    'prescription',
+    NEW.tenant_id,
+    'medical_order',
     NEW.id,
-    CASE WHEN TG_OP = 'INSERT' THEN 'prescription.created' ELSE 'prescription.updated' END,
+    CASE WHEN TG_OP = 'INSERT' THEN 'medical_order.created' ELSE 'medical_order.updated' END,
     jsonb_build_object(
-      'prescriptionId',   NEW.id,
+      'orderId',          NEW.id,
       'patientId',        NEW.patient_id,
       'problemId',        NEW.problem_id,
       'professionalId',   NEW.professional_id,
       'evolutionId',      NEW.evolution_id,
       'drugName',         NEW.drug_name,
+      'detail',           NEW.drug_name,
       'rxnormCode',       NEW.rxnorm_code,
       'dose',             NEW.dose,
       'frequency',        NEW.frequency,
       'route',            NEW.route,
       'durationDays',     NEW.duration_days,
+      'orderType',        'medication',
       'status',           NEW.status,
       'authoredOn',       NEW.authored_on,
       'refillDaysSupply', NEW.refill_days_supply,
       'isOneClickRefill', NEW.is_one_click_refill,
-      'tenantId',         NEW.tenant_id
+      'tenantId',         NEW.tenant_id,
+      'sourceTable',      'prescriptions'
     )
   );
   RETURN NEW;
@@ -378,9 +382,10 @@ RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.decompensation_status <> OLD.decompensation_status THEN
     INSERT INTO integration_outbox (
-      aggregate_type, aggregate_id, event_type, payload
+      tenant_id, aggregate_type, aggregate_id, event_type, payload
     )
     VALUES (
+      NEW.tenant_id,
       'problem',
       NEW.id,
       CASE

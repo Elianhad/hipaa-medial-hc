@@ -1,20 +1,30 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { FhirService } from '../fhir/fhir.service';
+import { DataSource, EntityManager } from 'typeorm';
+import {
+    FhirEvolutionTrend,
+    FhirOrderStatus,
+    FhirOrderType,
+    FhirProblemCategory,
+    FhirProblemClinicalStatus,
+    FhirService,
+} from '../fhir/fhir.service';
 
 interface OutboxEvent {
-    id: bigint;
+    id: string;
     aggregate_type: string;
     aggregate_id: string;
     event_type: string;
-    payload: Record<string, any>;
+    payload: Record<string, unknown>;
     retry_count: number;
 }
 
+type VerificationStatus = 'provisional' | 'differential' | 'confirmed' | 'refuted';
+type OutboxSourceTable = 'medical_orders' | 'prescriptions';
+
 const POLL_INTERVAL_MS = 5_000;   // 5 s
 const BATCH_SIZE = 10;
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 3;
 
 /**
  * OutboxWorkerService
@@ -37,7 +47,7 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
         private readonly fhirService: FhirService,
     ) { }
 
-    async onModuleInit() {
+    async onModuleInit(): Promise<void> {
         this.outboxAvailable = await this.checkOutboxTableExists();
         if (!this.outboxAvailable) {
             this.logger.warn('OutboxWorker disabled: table integration_outbox does not exist in current environment.');
@@ -45,7 +55,7 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
         }
 
         this.intervalHandle = setInterval(
-            () => this.processNextBatch().catch((err: any) => {
+            () => this.processNextBatch().catch((err: unknown) => {
                 if (this.isMissingOutboxTableError(err)) {
                     this.outboxAvailable = false;
                     this.logger.warn('OutboxWorker disabled: detected missing integration_outbox table during polling.');
@@ -55,7 +65,7 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
                     }
                     return;
                 }
-                this.logger.error('OutboxWorker batch failed', err);
+                this.logger.error(`OutboxWorker batch failed: ${this.formatError(err)}`);
             }),
             POLL_INTERVAL_MS,
         );
@@ -75,13 +85,20 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
 
         await this.dataSource.transaction(async (em) => {
             const events: OutboxEvent[] = await em.query(
-                `SELECT id, aggregate_type, aggregate_id, event_type, payload, retry_count
-         FROM integration_outbox
-         WHERE status = 'pending'
-           AND (next_retry_at IS NULL OR next_retry_at <= NOW())
-         ORDER BY id ASC
-         LIMIT $1
-         FOR UPDATE SKIP LOCKED`,
+                                `WITH next_events AS (
+                     SELECT id, aggregate_type, aggregate_id, event_type, payload, retry_count
+                     FROM integration_outbox
+                     WHERE status = 'pending'
+                         AND (next_retry_at IS NULL OR next_retry_at <= NOW())
+                     ORDER BY id ASC
+                     LIMIT $1
+                     FOR UPDATE SKIP LOCKED
+                 )
+                 UPDATE integration_outbox AS outbox
+                 SET status = 'processing'
+                 FROM next_events
+                 WHERE outbox.id = next_events.id
+                 RETURNING next_events.id, next_events.aggregate_type, next_events.aggregate_id, next_events.event_type, next_events.payload, next_events.retry_count`,
                 [BATCH_SIZE],
             );
 
@@ -96,7 +113,7 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
     // ─────────────────────────────────────────────────────────────────
 
     private async processEvent(
-        em: any,
+        em: EntityManager,
         event: OutboxEvent,
     ): Promise<void> {
         try {
@@ -104,29 +121,32 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
 
             await em.query(
                 `UPDATE integration_outbox
-         SET status = 'processed', processed_at = NOW()
+         SET status = 'completed', processed_at = NOW(), next_retry_at = NULL, last_error = NULL
          WHERE id = $1`,
                 [event.id],
             );
 
             this.logger.debug(`[outbox] Processed event ${event.event_type} id=${event.id}`);
-        } catch (err: any) {
-            const nextRetry = event.retry_count >= MAX_RETRIES - 1 ? null : this.nextRetryAt(event.retry_count);
-            const newStatus = event.retry_count >= MAX_RETRIES - 1 ? 'failed' : 'pending';
+        } catch (err: unknown) {
+            const nextRetryCount = event.retry_count + 1;
+            const exhaustedRetries = nextRetryCount >= MAX_RETRIES;
+            const nextRetry = exhaustedRetries ? null : this.nextRetryAt(event.retry_count);
+            const newStatus = exhaustedRetries ? 'failed' : 'pending';
 
             await em.query(
                 `UPDATE integration_outbox
          SET status = $2,
-             retry_count = retry_count + 1,
-             last_error = $3,
-             next_retry_at = $4
+             retry_count = $3,
+             last_error = $4,
+             next_retry_at = $5,
+             processed_at = NULL
          WHERE id = $1`,
-                [event.id, newStatus, err?.message ?? String(err), nextRetry],
+                [event.id, newStatus, nextRetryCount, this.formatError(err), nextRetry],
             );
 
             if (newStatus === 'failed') {
                 this.logger.error(
-                    `[outbox] Event ${event.event_type} id=${event.id} exhausted retries. Last error: ${err?.message}`,
+                    `[outbox] Event ${event.event_type} id=${event.id} exhausted retries. Last error: ${this.formatError(err)}`,
                 );
             }
         }
@@ -145,19 +165,20 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
                 if (event.event_type === 'problem.decompensation_started' ||
                     event.event_type === 'problem.decompensation_resolved') {
                     // Decompensation — update Condition clinicalStatus
-                    if (p.fhirConditionId) {
+                    const fhirConditionId = this.getString(p, 'fhirConditionId');
+                    if (fhirConditionId) {
                         await this.fhirService.upsertProblem(
                             {
-                                patientFhirId: p.patientId,
-                                tenantId: p.tenantId,
-                                title: p.title ?? 'Problema crónico',
+                                patientFhirId: this.getRequiredString(p, 'patientId'),
+                                tenantId: this.getRequiredString(p, 'tenantId'),
+                                title: this.getString(p, 'title') ?? 'Problema crónico',
                                 clinicalStatus: event.event_type === 'problem.decompensation_resolved'
                                     ? 'active'
                                     : 'active', // condition itself stays active; evolution thread notes decompensation
-                                category: p.category ?? 'problem-list-item',
-                                verificationStatus: p.verificationStatus,
+                                category: this.getProblemCategory(p, 'category') ?? 'problem-list-item',
+                                verificationStatus: this.getVerificationStatus(p, 'verificationStatus'),
                             },
-                            p.fhirConditionId,
+                            fhirConditionId,
                         );
                     }
                     break;
@@ -166,20 +187,20 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
                 // Standard create/update
                 await this.fhirService.upsertProblem(
                     {
-                        patientFhirId: p.patientId,
-                        tenantId: p.tenantId,
-                        title: p.title,
-                        clinicalStatus: p.clinicalStatus ?? 'active',
-                        category: p.category ?? 'encounter-diagnosis',
-                        verificationStatus: p.verificationStatus,
-                        onsetDate: p.onsetDate,
-                        abatementDate: p.resolutionDate,
-                        closureSummary: p.closureSummary,
-                        snomedCode: p.snomedCode,
-                        icd10Code: p.icd10Code,
-                        icd11Code: p.icd11Code,
+                        patientFhirId: this.getRequiredString(p, 'patientId'),
+                        tenantId: this.getRequiredString(p, 'tenantId'),
+                        title: this.getRequiredString(p, 'title'),
+                        clinicalStatus: this.getProblemClinicalStatus(p, 'clinicalStatus') ?? 'active',
+                        category: this.getProblemCategory(p, 'category') ?? 'encounter-diagnosis',
+                        verificationStatus: this.getVerificationStatus(p, 'verificationStatus'),
+                        onsetDate: this.getString(p, 'onsetDate'),
+                        abatementDate: this.getString(p, 'resolutionDate'),
+                        closureSummary: this.getString(p, 'closureSummary'),
+                        snomedCode: this.getString(p, 'snomedCode'),
+                        icd10Code: this.getString(p, 'icd10Code'),
+                        icd11Code: this.getString(p, 'icd11Code'),
                     },
-                    p.fhirConditionId,
+                    this.getString(p, 'fhirConditionId'),
                 );
                 break;
             }
@@ -187,19 +208,19 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
             // ── Evolution → Encounter + ClinicalImpression + Observations ─
             case 'evolution': {
                 const result = await this.fhirService.createEvolution({
-                    patientFhirId: p.patientId,
-                    practitionerFhirId: p.professionalId,
-                    tenantId: p.tenantId,
-                    evolutionDate: p.evolutionDate ?? new Date().toISOString(),
-                    subjective: p.subjective,
-                    objective: p.objective,
-                    assessment: p.assessment,
-                    plan: p.plan,
-                    trend: p.trend,
-                    problemFhirId: p.fhirConditionId,
-                    problemTitle: p.problemTitle,
-                    icd10Code: p.icd10Code,
-                    problemClinicalStatus: p.clinicalStatus,
+                    patientFhirId: this.getRequiredString(p, 'patientId'),
+                    practitionerFhirId: this.getRequiredString(p, 'professionalId'),
+                    tenantId: this.getRequiredString(p, 'tenantId'),
+                    evolutionDate: this.getString(p, 'evolutionDate') ?? new Date().toISOString(),
+                    subjective: this.getString(p, 'subjective'),
+                    objective: this.getString(p, 'objective'),
+                    assessment: this.getString(p, 'assessment'),
+                    plan: this.getString(p, 'plan'),
+                    trend: this.getEvolutionTrend(p, 'trend'),
+                    problemFhirId: this.getString(p, 'fhirConditionId'),
+                    problemTitle: this.getString(p, 'problemTitle'),
+                    icd10Code: this.getString(p, 'icd10Code'),
+                    problemClinicalStatus: this.getProblemClinicalStatus(p, 'clinicalStatus'),
                 });
 
                 // Persist FHIR resource IDs back to local record
@@ -214,40 +235,36 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
             }
 
             // ── Order → MedicationRequest / ServiceRequest ────────────────
-            case 'medical_order':
-            case 'prescription': {
+                case 'medical_order': {
                 const today = new Date().toISOString().split('T')[0];
                 const result = await this.fhirService.createOrder({
-                    orderId: p.orderId ?? p.prescriptionId,
-                    patientFhirId: p.patientId,
-                    practitionerFhirId: p.professionalId ?? p.professionalId,
-                    problemFhirId: p.fhirConditionId ?? p.problemId,
-                    encounterId: p.encounterId,
-                    tenantId: p.tenantId,
-                    authoredOn: p.authoredOn ?? today,
-                    type: p.orderType === 'laboratory' || p.orderType === 'imaging'
-                        ? p.orderType
+                        orderId: this.getRequiredString(p, 'orderId'),
+                        patientFhirId: this.getRequiredString(p, 'patientId'),
+                        practitionerFhirId: this.getRequiredString(p, 'professionalId'),
+                        problemFhirId: this.getString(p, 'fhirConditionId') ?? this.getString(p, 'problemId'),
+                        encounterId: this.getString(p, 'encounterId'),
+                        tenantId: this.getRequiredString(p, 'tenantId'),
+                        authoredOn: this.getString(p, 'authoredOn') ?? today,
+                        type: this.getOrderType(p, 'orderType') === 'laboratory' || this.getOrderType(p, 'orderType') === 'imaging'
+                            ? (this.getOrderType(p, 'orderType') as FhirOrderType)
                         : 'medication',
-                    status: p.status ?? 'active',
-                    detail: p.drugName ?? p.orderData?.detail ?? p.detail,
-                    medicationCode: p.rxnormCode ?? p.medicationCode,
-                    medicationDisplay: p.drugName ?? p.medicationDisplay,
-                    serviceCode: p.serviceCode,
-                    serviceDisplay: p.serviceDisplay,
-                    note: p.instructions ?? p.note,
+                        status: this.getOrderStatus(p, 'status') ?? 'active',
+                        detail: this.getString(p, 'drugName') ?? this.getString(p, 'detail') ?? 'Orden clínica',
+                        medicationCode: this.getString(p, 'rxnormCode') ?? this.getString(p, 'medicationCode'),
+                        medicationDisplay: this.getString(p, 'drugName') ?? this.getString(p, 'medicationDisplay'),
+                        serviceCode: this.getString(p, 'serviceCode'),
+                        serviceDisplay: this.getString(p, 'serviceDisplay'),
+                        note: this.getString(p, 'instructions') ?? this.getString(p, 'note'),
                 });
 
                 // Persist FHIR ID back
-                const table = event.aggregate_type === 'prescription'
-                    ? 'prescriptions'
-                    : 'medical_orders';
-                const idColumn = event.aggregate_type === 'prescription'
-                    ? 'fhir_medication_request_id'
-                    : 'fhir_resource_id';
+                    const sourceTable = this.getSourceTable(p);
+                    const table = sourceTable === 'prescriptions' ? 'prescriptions' : 'medical_orders';
+                    const idColumn = sourceTable === 'prescriptions' ? 'fhir_medication_request_id' : 'fhir_resource_id';
 
                 await this.dataSource.query(
                     `UPDATE ${table} SET ${idColumn} = $2 WHERE id = $1`,
-                    [p.prescriptionId ?? p.orderId, result.id],
+                        [this.getRequiredString(p, 'orderId'), result.id],
                 );
                 break;
             }
@@ -273,14 +290,124 @@ export class OutboxWorkerService implements OnModuleInit, OnModuleDestroy {
             );
 
             return Boolean(rows[0]?.regclass);
-        } catch (err: any) {
-            this.logger.warn(`OutboxWorker table check failed: ${err?.message ?? String(err)}`);
+        } catch (err: unknown) {
+            this.logger.warn(`OutboxWorker table check failed: ${this.formatError(err)}`);
             return false;
         }
     }
 
-    private isMissingOutboxTableError(err: any): boolean {
-        const message = String(err?.message ?? '');
-        return err?.code === '42P01' || message.includes('integration_outbox') || message.includes('does not exist');
+    private isMissingOutboxTableError(err: unknown): boolean {
+        const message = this.formatError(err);
+        const code = typeof err === 'object' && err !== null && 'code' in err ? String(err.code) : '';
+        return code === '42P01' || message.includes('integration_outbox') || message.includes('does not exist');
+    }
+
+    private formatError(err: unknown): string {
+        if (err instanceof Error) {
+            return err.message;
+        }
+
+        return String(err);
+    }
+
+    private getString(payload: Record<string, unknown>, key: string): string | undefined {
+        const value = payload[key];
+        return typeof value === 'string' && value.length > 0 ? value : undefined;
+    }
+
+    private getRequiredString(payload: Record<string, unknown>, key: string): string {
+        const value = this.getString(payload, key);
+        if (!value) {
+            throw new Error(`Outbox payload is missing required field ${key}`);
+        }
+
+        return value;
+    }
+
+    private getProblemClinicalStatus(
+        payload: Record<string, unknown>,
+        key: string,
+    ): FhirProblemClinicalStatus | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: FhirProblemClinicalStatus[] = ['active', 'resolved', 'inactive', 'recurrence', 'remission'];
+        return allowed.includes(value as FhirProblemClinicalStatus)
+            ? (value as FhirProblemClinicalStatus)
+            : undefined;
+    }
+
+    private getProblemCategory(
+        payload: Record<string, unknown>,
+        key: string,
+    ): FhirProblemCategory | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: FhirProblemCategory[] = ['encounter-diagnosis', 'problem-list-item', 'health-concern'];
+        return allowed.includes(value as FhirProblemCategory)
+            ? (value as FhirProblemCategory)
+            : undefined;
+    }
+
+    private getVerificationStatus(
+        payload: Record<string, unknown>,
+        key: string,
+    ): VerificationStatus | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: VerificationStatus[] = ['provisional', 'differential', 'confirmed', 'refuted'];
+        return allowed.includes(value as VerificationStatus)
+            ? (value as VerificationStatus)
+            : undefined;
+    }
+
+    private getEvolutionTrend(
+        payload: Record<string, unknown>,
+        key: string,
+    ): FhirEvolutionTrend | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: FhirEvolutionTrend[] = ['improving', 'stable', 'worsening', 'resolution'];
+        return allowed.includes(value as FhirEvolutionTrend)
+            ? (value as FhirEvolutionTrend)
+            : undefined;
+    }
+
+    private getOrderType(
+        payload: Record<string, unknown>,
+        key: string,
+    ): FhirOrderType | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: FhirOrderType[] = ['medication', 'laboratory', 'imaging'];
+        return allowed.includes(value as FhirOrderType)
+            ? (value as FhirOrderType)
+            : undefined;
+    }
+
+    private getOrderStatus(
+        payload: Record<string, unknown>,
+        key: string,
+    ): FhirOrderStatus | undefined {
+        const value = this.getString(payload, key);
+        if (!value) return undefined;
+
+        const allowed: FhirOrderStatus[] = ['draft', 'active', 'completed', 'cancelled'];
+        return allowed.includes(value as FhirOrderStatus)
+            ? (value as FhirOrderStatus)
+            : undefined;
+    }
+
+    private getSourceTable(payload: Record<string, unknown>): OutboxSourceTable {
+        const value = this.getString(payload, 'sourceTable');
+        if (value === 'prescriptions') {
+            return 'prescriptions';
+        }
+
+        return 'medical_orders';
     }
 }

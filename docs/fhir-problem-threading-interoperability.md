@@ -142,4 +142,28 @@ ORDER BY evolution_date, evolution_time;
 
 ## Nota de arquitectura
 
-Los triggers no deben invocar el endpoint FHIR directamente. Deben producir eventos transaccionales en la base y dejar la sincronización externa a un consumidor idempotente. Eso preserva consistencia clínica y reduce fallas por dependencias remotas.
+Los triggers no deben invocar el endpoint FHIR directamente. Deben producir eventos transaccionales en la base y dejar la Plan: Integración Medplum OSS por fases
+Enfoque recomendado: consolidar primero MVP estable de OAuth2 + Patient + consistencia de outbox, luego habilitar lectura segura y recién después activar bidireccionalidad controlada.
+
+Steps
+
+Fase 0. Baseline técnico
+Normalizar configuración Medplum en bootstrap y documentación.
+Definir contrato único de eventos outbox entre SQL y worker.
+Fase 1. MVP OAuth2 + Patient
+Integrar sync de Patient en alta/actualización local.
+Guardar referencia FHIR del paciente localmente.
+Definir fallback no bloqueante si Medplum cae.
+Fase 2. Lectura y búsqueda segura
+Endpoints de búsqueda Patient/Condition con filtros mínimos.
+Validación de tenant en lecturas de recursos.
+Fase 3. Bidireccionalidad controlada
+Ingesta Medplum a local con watermark incremental.
+Detección de duplicados e idempotencia.
+Política de resolución de conflictos documentada y testeada.
+Fase 4. Operación y observabilidad
+Métricas de outbox/backlog/reintentos.
+Runbook de recuperación y reconciliación por tenant.
+Fase 5. Validación final y rollout
+Pruebas de integración multi-tenant y conflictos.
+Habilitación gradual por feature flag/tenant.sincronización externa a un consumidor idempotente. Eso preserva consistencia clínica y reduce fallas por dependencias remotas.

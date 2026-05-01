@@ -8,6 +8,7 @@ import { Prescription } from './entities/prescription.entity';
 import { AdherenceRecord } from './entities/adherence-record.entity';
 import { ProblemTransitionEvent } from './entities/problem-transition-event.entity';
 import { ArVademecumItem } from './entities/ar-vademecum-item.entity';
+import { MedicalOrder } from './entities/medical-order.entity';
 
 // Shared from clinical-records (imported without creating a circular dep)
 import { Problem } from '../clinical-records/problem.entity';
@@ -30,6 +31,7 @@ import { PrescriptionValidationController } from './prescription-validation.cont
             AdherenceRecord,
             ProblemTransitionEvent,
             ArVademecumItem,
+            MedicalOrder,
             Problem,
             ClinicalEvolution,
         ]),

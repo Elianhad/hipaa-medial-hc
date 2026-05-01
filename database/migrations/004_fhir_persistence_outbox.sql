@@ -4,7 +4,7 @@
 -- =============================================================================
 
 DO $$ BEGIN
-  CREATE TYPE integration_event_status AS ENUM ('pending', 'processing', 'processed', 'failed');
+  CREATE TYPE integration_event_status AS ENUM ('pending', 'processing', 'failed', 'completed');
 EXCEPTION WHEN duplicate_object THEN null;
 END $$;
 
@@ -31,15 +31,16 @@ CREATE TABLE IF NOT EXISTS integration_outbox (
     event_type          VARCHAR(100) NOT NULL,
     payload             JSONB NOT NULL,
     status              integration_event_status NOT NULL DEFAULT 'pending',
-    available_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    retry_count         INTEGER NOT NULL DEFAULT 0,
+    next_retry_at       TIMESTAMPTZ,
     processed_at        TIMESTAMPTZ,
     last_error          TEXT,
     created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (aggregate_type IN ('problem', 'evolution', 'order'))
+    CHECK (aggregate_type IN ('problem', 'evolution', 'medical_order'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_integration_outbox_pending
-  ON integration_outbox (status, available_at, created_at);
+  ON integration_outbox (status, next_retry_at, created_at);
 
 CREATE INDEX IF NOT EXISTS idx_integration_outbox_aggregate
   ON integration_outbox (aggregate_type, aggregate_id, created_at DESC);
@@ -88,12 +89,12 @@ BEGIN
       jsonb_build_object(
         'problemId', NEW.id,
         'patientId', NEW.patient_id,
+        'tenantId', NEW.tenant_id,
         'title', NEW.title,
         'snomedCode', NEW.snomed_ct_code,
         'icd10Code', NEW.icd10_code,
         'category', NEW.category,
-        'clinicalStatus', NEW.clinical_status,
-        'fhirClinicalStatus', map_problem_clinical_status_to_fhir(NEW.clinical_status),
+        'clinicalStatus', map_problem_clinical_status_to_fhir(NEW.clinical_status),
         'resolutionDate', NEW.resolution_date,
         'resolutionReason', NEW.resolution_reason,
         'closureSummary', NEW.closure_summary,
@@ -135,11 +136,12 @@ BEGIN
         'patientId', NEW.patient_id,
         'problemId', NEW.problem_id,
         'professionalId', NEW.professional_id,
-        'encounterDateTime', (NEW.evolution_date::TEXT || 'T' || NEW.evolution_time::TEXT),
-        'anamnesisNarrative', NEW.anamnesis_narrative,
-        'objectiveFindings', NEW.objective_findings,
-        'clinicalAssessment', NEW.clinical_assessment,
-        'actionPlan', NEW.action_plan,
+        'tenantId', NEW.tenant_id,
+        'evolutionDate', (NEW.evolution_date::TEXT || 'T' || NEW.evolution_time::TEXT),
+        'subjective', NEW.anamnesis_narrative,
+        'objective', NEW.objective_findings,
+        'assessment', NEW.clinical_assessment,
+        'plan', NEW.action_plan,
         'trend', NEW.trend,
         'trendScore', NEW.trend_score,
         'occurredAt', NOW()
@@ -168,20 +170,22 @@ BEGIN
       payload
     ) VALUES (
       NEW.tenant_id,
-      'order',
+      'medical_order',
       NEW.id,
-      CASE WHEN TG_OP = 'INSERT' THEN 'order.created' ELSE 'order.updated' END,
+      CASE WHEN TG_OP = 'INSERT' THEN 'medical_order.created' ELSE 'medical_order.updated' END,
       jsonb_build_object(
         'orderId', NEW.id,
         'patientId', NEW.patient_id,
         'problemId', NEW.problem_id,
         'evolutionId', NEW.evolution_id,
-        'orderedBy', NEW.ordered_by,
-        'type', NEW.type,
+        'professionalId', NEW.ordered_by,
+        'tenantId', NEW.tenant_id,
+        'orderType', NEW.type,
         'detail', NEW.detail,
-        'orderStatus', NEW.order_status,
+        'status', NEW.order_status,
         'completedAt', NEW.completed_at,
         'cancelledAt', NEW.cancelled_at,
+        'sourceTable', 'medical_orders',
         'occurredAt', NOW()
       )
     );
