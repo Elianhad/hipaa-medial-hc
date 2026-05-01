@@ -33,7 +33,14 @@ export type FhirOrderStatus =
   | 'cancelled';
 
 export interface FhirPatientInput {
+  /** Local DB UUID — used as a secondary identifier in the FHIR resource. */
   patientId: string;
+  /**
+   * Canonical Medplum Patient.id from a previous sync.
+   * When present, the update targets `/Patient/{fhirId}` directly.
+   * When absent, a conditional update by DNI is used so Medplum assigns the ID.
+   */
+  fhirId?: string;
   dni: string;
   firstName: string;
   lastName: string;
@@ -153,10 +160,25 @@ export class FhirService {
   }
 
   async upsertPatient(input: FhirPatientInput): Promise<string> {
+    if (input.fhirId) {
+      // Patient already synced: update the known Medplum resource by its canonical ID.
+      const resource = this.buildPatientResource(input, input.fhirId);
+      const response = await this.request<{ id: string }>(
+        'PUT',
+        `/Patient/${input.fhirId}`,
+        resource,
+      );
+      return response.id;
+    }
+
+    // First sync: FHIR conditional update by DNI identifier.
+    // Medplum searches for an existing Patient with this identifier;
+    // creates one if none found, updates the match if exactly one found.
+    // The server assigns and returns the canonical FHIR Patient.id.
     const resource = this.buildPatientResource(input);
     const response = await this.request<{ id: string }>(
       'PUT',
-      `/Patient/${input.patientId}`,
+      `/Patient?identifier=urn:oid:2.16.840.1.113883.4.330.32|${encodeURIComponent(input.dni)}`,
       resource,
     );
     return response.id;
@@ -326,10 +348,12 @@ export class FhirService {
     }
   }
 
-  buildPatientResource(input: FhirPatientInput) {
+  buildPatientResource(input: FhirPatientInput, fhirId?: string) {
     return {
       resourceType: 'Patient',
-      id: input.patientId,
+      // Include the canonical FHIR id only when already known (PUT update).
+      // Omit it for conditional create so Medplum assigns its own ID.
+      ...(fhirId ? { id: fhirId } : {}),
       meta: {
         profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
       },
@@ -338,6 +362,11 @@ export class FhirService {
           use: 'official',
           system: 'urn:oid:2.16.840.1.113883.4.330.32',
           value: input.dni,
+        },
+        {
+          use: 'secondary',
+          system: 'https://hipaa-hce/fhir/patient-id',
+          value: input.patientId,
         },
       ],
       name: [

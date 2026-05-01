@@ -2,11 +2,13 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { PatientsService } from '../patients.service';
 import { MockRenaperService } from '../mock-renaper.service';
 import { SexType } from '../../../common/enums/sex-type.enum';
+import { FhirService } from '../../fhir/fhir.service';
 
 describe('PatientsService', () => {
   let patientsService: PatientsService;
   let mockRenaperService: MockRenaperService;
   let mockPatientRepo: any;
+  let mockFhirService: Partial<FhirService>;
   let previousBypassFlag: string | undefined;
 
   beforeEach(() => {
@@ -19,12 +21,19 @@ describe('PatientsService', () => {
       findOne: jest.fn(),
       create: jest.fn((dto) => ({ ...dto })),
       save: jest.fn((entity) => Promise.resolve({ id: 'new-uuid', ...entity })),
+      update: jest.fn().mockResolvedValue(undefined),
       findAndCount: jest.fn(),
+    };
+
+    mockFhirService = {
+      isConfigured: jest.fn().mockReturnValue(false),
+      upsertPatient: jest.fn().mockResolvedValue('fhir-patient-001'),
     };
 
     patientsService = new PatientsService(
       mockPatientRepo,
       mockRenaperService,
+      mockFhirService as FhirService,
     );
   });
 
@@ -118,6 +127,66 @@ describe('PatientsService', () => {
 
       expect(patient.identityVerified).toBe(false);
     });
+
+    it('calls upsertPatient after create when FHIR is configured', async () => {
+      (mockFhirService.isConfigured as jest.Mock).mockReturnValue(true);
+      mockPatientRepo.findOne.mockResolvedValue(null);
+
+      const patient = await patientsService.create({
+        dni: '12345678',
+        sex: SexType.M,
+        email: 'juan@example.com',
+      });
+
+      // Allow the fire-and-forget promise to resolve
+      await new Promise(process.nextTick);
+
+      expect(mockFhirService.upsertPatient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: patient.id,
+          dni: '12345678',
+          sex: 'male',
+        }),
+      );
+      expect(mockPatientRepo.update).toHaveBeenCalledWith(
+        { id: patient.id },
+        { fhirId: 'fhir-patient-001' },
+      );
+    });
+
+    it('does NOT call upsertPatient when FHIR is not configured', async () => {
+      (mockFhirService.isConfigured as jest.Mock).mockReturnValue(false);
+      mockPatientRepo.findOne.mockResolvedValue(null);
+
+      await patientsService.create({ dni: '12345678', sex: SexType.M });
+      await new Promise(process.nextTick);
+
+      expect(mockFhirService.upsertPatient).not.toHaveBeenCalled();
+    });
+
+    it('persists patient locally even when Medplum throws', async () => {
+      (mockFhirService.isConfigured as jest.Mock).mockReturnValue(true);
+      (mockFhirService.upsertPatient as jest.Mock).mockRejectedValueOnce(
+        new Error('Medplum unavailable'),
+      );
+      mockPatientRepo.findOne.mockResolvedValue(null);
+
+      // create() must resolve without throwing
+      const patient = await patientsService.create({
+        dni: '12345678',
+        sex: SexType.M,
+      });
+
+      // Allow fire-and-forget to settle
+      await new Promise(process.nextTick);
+
+      expect(patient.id).toBeTruthy();
+      // fhirId should NOT be set because sync failed
+      expect(mockPatientRepo.update).not.toHaveBeenCalledWith(
+        { id: patient.id },
+        expect.objectContaining({ fhirId: expect.any(String) }),
+      );
+    });
   });
 
   describe('update()', () => {
@@ -145,6 +214,35 @@ describe('PatientsService', () => {
       expect(result.lastName).toBe('Pérez');
       // Contact fields should be updated
       expect(result.email).toBe('new@example.com');
+    });
+
+    it('calls upsertPatient after update when FHIR is configured', async () => {
+      (mockFhirService.isConfigured as jest.Mock).mockReturnValue(true);
+      const existingPatient = {
+        id: 'uuid-1',
+        dni: '12345678',
+        sex: SexType.F,
+        firstName: 'Ana',
+        lastName: 'Gómez',
+        birthDate: '1990-05-20',
+        email: 'old@example.com',
+        identityVerified: false,
+        fhirId: 'fhir-existing-001',
+      };
+
+      mockPatientRepo.findOne.mockResolvedValue(existingPatient);
+      mockPatientRepo.save.mockImplementation((e: any) => Promise.resolve(e));
+
+      await patientsService.update('uuid-1', { email: 'new@example.com' } as any);
+      await new Promise(process.nextTick);
+
+      expect(mockFhirService.upsertPatient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: 'uuid-1',
+          fhirId: 'fhir-existing-001',
+          sex: 'female',
+        }),
+      );
     });
   });
 

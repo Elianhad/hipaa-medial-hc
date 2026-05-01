@@ -7,6 +7,8 @@ import {
   DeleteDateColumn,
   Index,
 } from 'typeorm';
+
+
 import { SexType } from '../../common/enums/sex-type.enum';
 
 export { SexType };
@@ -75,6 +77,16 @@ export class Patient {
   @Index({ unique: true })
   @Column({ name: 'auth0_sub', nullable: true, length: 255 })
   auth0Sub: string;
+
+  /**
+   * Canonical FHIR Patient.id assigned by Medplum.
+   * Null until the first successful sync with the FHIR server.
+   * Once set, all clinical resources (Condition, Encounter, etc.) reference
+   * this ID as `subject: { reference: "Patient/{fhirId}" }`.
+   */
+  @Index({ unique: true, sparse: true })
+  @Column({ name: 'fhir_id', type: 'varchar', nullable: true, length: 255 })
+  fhirId: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

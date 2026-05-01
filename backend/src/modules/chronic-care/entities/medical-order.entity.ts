@@ -65,10 +65,10 @@ export class MedicalOrder {
     })
     orderStatus: MedicalOrderStatus;
 
-    @Column({ name: 'fhir_resource_type', length: 50, nullable: true })
+    @Column({ name: 'fhir_resource_type', type: 'varchar', length: 50, nullable: true })
     fhirResourceType: string | null;
 
-    @Column({ name: 'fhir_resource_id', length: 255, nullable: true })
+    @Column({ name: 'fhir_resource_id', type: 'varchar', length: 255, nullable: true })
     fhirResourceId: string | null;
 
     @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
