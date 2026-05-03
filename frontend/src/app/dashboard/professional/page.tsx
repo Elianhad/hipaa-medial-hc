@@ -225,7 +225,7 @@ export default function ProfessionalDashboardPage() {
                         onChange={(event) => {
                           void updateStatus(appointment.id, event.target.value as AttendanceStatus);
                         }}
-                        className="ml-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                        className="ml-2 rounded-lg border border-sky-200 bg-sky-50/70 px-2 py-1 text-xs text-sky-800 shadow-sm focus:border-sky-400 focus:outline-none focus:ring-2 focus:ring-sky-100"
                       >
                         <option value="pendiente">Pendiente</option>
                         <option value="presente">Presente</option>
@@ -234,7 +234,7 @@ export default function ProfessionalDashboardPage() {
                     </label>
                     <Link
                       href={`/dashboard/professional/pacientes/${appointment.patientId}`}
-                      className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-medium text-white hover:bg-slate-700"
+                      className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-emerald-700"
                     >
                       Revisar paciente
                     </Link>
@@ -258,8 +258,8 @@ export default function ProfessionalDashboardPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowWalkInModal(false); }}
         >
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-50 shadow-xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#eef6f5_100%)] shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-sky-200 bg-white/90 px-6 py-4 backdrop-blur">
               <div>
                 <h2 className="font-semibold text-slate-800">Alta espontánea</h2>
                 <p className="text-xs text-slate-500 mt-0.5">Registre un paciente que se presenta sin turno previo</p>
@@ -272,7 +272,7 @@ export default function ProfessionalDashboardPage() {
                 ✕
               </button>
             </div>
-            <div className="p-2">
+            <div className="p-4">
               <PatientRegistrationForm
                 onSuccess={(patientId) => {
                   setShowWalkInModal(false);

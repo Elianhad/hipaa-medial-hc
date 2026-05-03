@@ -16,9 +16,9 @@ const EMPTY_BILLING: OrgBillingResponse = {
 };
 
 const statusBadge: Record<OrgBillingItem['status'], string> = {
-    pending: 'bg-amber-100 text-amber-800',
-    paid: 'bg-emerald-100 text-emerald-800',
-    rejected: 'bg-rose-100 text-rose-800',
+    pending: 'border border-amber-200 bg-amber-100 text-amber-800',
+    paid: 'border border-emerald-200 bg-emerald-100 text-emerald-800',
+    rejected: 'border border-rose-200 bg-rose-100 text-rose-800',
 };
 
 const statusLabel: Record<OrgBillingItem['status'], string> = {
@@ -58,9 +58,14 @@ export default function OrgBillingPage() {
         <OrganizationPortalGuard>
             <main className="min-h-screen py-10 px-4">
                 <div className="max-w-5xl mx-auto space-y-6">
-                    <header>
-                        <h1 className="text-3xl font-bold text-slate-900">Facturación</h1>
-                        <p className="text-slate-500 mt-1">Prestaciones, obras sociales y liquidaciones</p>
+                    <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+                        <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panel organizacional</p>
+                        <h1 className="mt-3 text-3xl font-bold text-slate-900">Facturación</h1>
+                        <p className="mt-2 text-slate-600">Prestaciones, obras sociales y liquidaciones</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700">Ciclo de cobro</span>
+                            <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-rose-700">Débitos y rechazos</span>
+                        </div>
                     </header>
 
                     {/* Backend connectivity banner */}
@@ -72,20 +77,20 @@ export default function OrgBillingPage() {
 
                     {/* KPI row */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
+                        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm">
                             <p className="text-2xl font-bold text-amber-600">
                                 {isLoading ? '…' : formatARS(billing.pendingAmount)}
                             </p>
                             <p className="text-sm text-slate-500 mt-1">Pendiente de cobro</p>
                         </div>
-                        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                            <p className="text-2xl font-bold text-green-600">
+                        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-5 shadow-sm">
+                            <p className="text-2xl font-bold text-emerald-600">
                                 {isLoading ? '…' : formatARS(billing.paidThisMonth)}
                             </p>
                             <p className="text-sm text-slate-500 mt-1">Cobrado este mes</p>
                         </div>
-                        <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-100">
-                            <p className="text-2xl font-bold text-red-600">
+                        <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-5 shadow-sm">
+                            <p className="text-2xl font-bold text-rose-600">
                                 {isLoading ? '…' : billing.rejectedCount}
                             </p>
                             <p className="text-sm text-slate-500 mt-1">Prestaciones rechazadas</p>
@@ -93,12 +98,12 @@ export default function OrgBillingPage() {
                     </div>
 
                     {/* Billing items table */}
-                    <section className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                        <div className="px-6 py-4 border-b border-slate-100">
+                    <section className="overflow-hidden rounded-2xl border border-amber-200 bg-white/90 shadow-sm">
+                        <div className="border-b border-amber-100 bg-amber-50/50 px-6 py-4">
                             <h2 className="font-semibold text-slate-800">Prestaciones recientes</h2>
                         </div>
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                            <thead className="border-b border-amber-100 bg-amber-50/70">
                                 <tr>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Fecha</th>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Profesional</th>
@@ -123,7 +128,7 @@ export default function OrgBillingPage() {
                                     </tr>
                                 ) : (
                                     billing.items.map((item) => (
-                                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                        <tr key={item.id} className="transition-colors hover:bg-amber-50/35">
                                             <td className="px-6 py-4 text-slate-600">{item.date}</td>
                                             <td className="px-6 py-4 text-slate-700">{item.professionalName}</td>
                                             <td className="px-6 py-4 text-slate-700">{item.patientName}</td>

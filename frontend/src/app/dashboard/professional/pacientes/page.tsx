@@ -233,8 +233,8 @@ export default function ProfessionalPacientesPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-slate-50 shadow-xl">
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl bg-white/90 backdrop-blur border-b border-slate-200 px-6 py-4">
+          <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#f8fafc_0%,#eef6f5_100%)] shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-3xl border-b border-sky-200 bg-white/90 px-6 py-4 backdrop-blur">
               <h2 className="font-semibold text-slate-800">Alta de Paciente</h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -244,7 +244,7 @@ export default function ProfessionalPacientesPage() {
                 ✕
               </button>
             </div>
-            <div className="p-2">
+            <div className="p-4">
               <PatientRegistrationForm onSuccess={handlePatientRegistered} />
             </div>
           </div>

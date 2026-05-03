@@ -20,6 +20,8 @@ const AVAILABLE_INSURANCES = ['OSDE', 'Galeno', 'Swiss Medical', 'PAMI', 'IOMA']
 export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const fieldClassName =
+        'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100';
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -56,16 +58,16 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
         <form onSubmit={handleSubmit} className="space-y-6">
 
             {/* TARJETA 1: Información Pública */}
-            <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-2">
-                    <User className="w-5 h-5 text-emerald-600" />
+            <section className="overflow-hidden rounded-2xl border border-emerald-200 bg-white shadow-sm">
+                <div className="flex items-center gap-2 border-b border-emerald-200 bg-emerald-50/70 px-6 py-4">
+                    <User className="w-5 h-5 text-emerald-700" />
                     <h2 className="text-base font-semibold text-slate-800">Perfil Público</h2>
                 </div>
                 <div className="p-6 space-y-5">
                     {/* Fila: Avatar y Especialidad */}
                     <div className="flex flex-col md:flex-row gap-6">
                         <div className="flex flex-col items-center gap-2">
-                            <div className="w-24 h-24 rounded-full bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 overflow-hidden">
+                            <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-dashed border-emerald-300 bg-emerald-50 text-emerald-600">
                                 {/* Aquí iría un <Image /> de Next.js si tienes la foto */}
                                 <User className="w-8 h-8 opacity-50" />
                             </div>
@@ -81,7 +83,7 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
                                     name="specialty"
                                     defaultValue={initialData.specialty}
                                     required
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                    className={fieldClassName}
                                 >
                                     <option value="Clínica Médica">Clínica Médica</option>
                                     <option value="Cardiología">Cardiología</option>
@@ -96,7 +98,7 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
                                     defaultValue={initialData.bio}
                                     rows={3}
                                     placeholder="Cuéntales a tus pacientes sobre tu experiencia y enfoque médico..."
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none"
+                                    className={`${fieldClassName} resize-none`}
                                 />
                                 <p className="text-xs text-slate-500 mt-1">Esta información aparecerá en tu perfil visible para los pacientes.</p>
                             </div>
@@ -109,9 +111,9 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 {/* Columna Izquierda: Matrículas */}
-                <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-2">
-                        <FileBadge className="w-5 h-5 text-emerald-600" />
+                <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-violet-200 bg-violet-50/70 px-6 py-4">
+                        <FileBadge className="w-5 h-5 text-violet-700" />
                         <h2 className="text-base font-semibold text-slate-800">Credenciales</h2>
                     </div>
                     <div className="p-6 space-y-4">
@@ -123,16 +125,16 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
                                 required
                                 defaultValue={initialData.licenseNumber}
                                 placeholder="Ej: MN 123456"
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                className={fieldClassName}
                             />
                         </div>
                     </div>
                 </section>
 
                 {/* Columna Derecha: Honorarios Particulares */}
-                <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-emerald-600" />
+                <section className="overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-50/70 px-6 py-4">
+                        <CreditCard className="w-5 h-5 text-amber-700" />
                         <h2 className="text-base font-semibold text-slate-800">Honorarios Particulares</h2>
                     </div>
                     <div className="p-6 space-y-4">
@@ -146,7 +148,7 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
                                     min="0"
                                     step="1000"
                                     defaultValue={initialData.consultationFee}
-                                    className="w-full pl-8 pr-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                    className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-8 pr-3 text-sm text-slate-700 shadow-sm transition focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
                                 />
                             </div>
                             <p className="text-xs text-slate-500 mt-1">Este es el valor base si el paciente no cuenta con cobertura médica.</p>
@@ -156,19 +158,19 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
             </div>
 
             {/* TARJETA 3: Obras Sociales */}
-            <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="bg-slate-50 border-b border-slate-200 px-6 py-4">
+            <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
+                <div className="border-b border-sky-200 bg-sky-50/70 px-6 py-4">
                     <h2 className="text-base font-semibold text-slate-800">Obras Sociales y Prepagas Aceptadas</h2>
                 </div>
                 <div className="p-6">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {AVAILABLE_INSURANCES.map((insurance) => (
-                            <label key={insurance} className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50">
+                            <label key={insurance} className="flex cursor-pointer items-center gap-3 rounded-lg border border-slate-200 bg-white p-3 transition-colors hover:bg-sky-50 has-[:checked]:border-sky-400 has-[:checked]:bg-sky-50/70">
                                 <input
                                     type="checkbox"
                                     name={`insurance_${insurance}`}
                                     defaultChecked={initialData.insurances.includes(insurance)}
-                                    className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                    className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
                                 />
                                 <span className="text-sm font-medium text-slate-700">{insurance}</span>
                             </label>
@@ -180,7 +182,7 @@ export function ProfessionalProfileForm({ initialData }: ProfessionalProfileProp
             {/* Feedbacks y Botón de Guardar */}
             {statusMessage && (
                 <div className={`p-4 rounded-xl flex items-center gap-2 ${statusMessage.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="h-5 w-5" />
                     <span className="font-medium">{statusMessage.text}</span>
                 </div>
             )}

@@ -6,9 +6,14 @@ export default function OrgStaffDashboardPage() {
     return (
         <main className="min-h-screen py-10 px-4">
             <div className="max-w-4xl mx-auto space-y-8">
-                <header>
-                    <h1 className="text-3xl font-bold text-slate-900">Mi Dashboard</h1>
-                    <p className="text-slate-500 mt-1">Tu agenda y pacientes dentro de la organización</p>
+                <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+                    <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Portal staff</p>
+                    <h1 className="mt-3 text-3xl font-bold text-slate-900">Mi Dashboard</h1>
+                    <p className="mt-2 text-slate-600">Tu agenda y pacientes dentro de la organización</p>
+                    <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                        <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">Operativa personal</span>
+                        <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-violet-700">Seguimiento clínico</span>
+                    </div>
                 </header>
 
                 {/* Quick links */}
@@ -20,19 +25,19 @@ export default function OrgStaffDashboardPage() {
                         <a
                             key={item.label}
                             href={item.href}
-                            className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 hover:border-indigo-300 hover:shadow-md transition-all"
+                            className="rounded-2xl border border-sky-200 bg-white/90 p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md"
                         >
                             <div className="text-3xl mb-2">{item.icon}</div>
-                            <h2 className="font-semibold text-slate-800">{item.label}</h2>
+                            <h2 className="font-semibold text-slate-900">{item.label}</h2>
                             <p className="text-sm text-slate-500 mt-1">{item.desc}</p>
                         </a>
                     ))}
                 </div>
 
                 {/* Today's appointments summary */}
-                <section className="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
-                    <h2 className="font-semibold text-slate-800 mb-4">Turnos de hoy</h2>
-                    <div className="rounded-lg border-2 border-dashed border-slate-200 p-8 text-center text-slate-400 text-sm">
+                <section className="rounded-2xl border border-emerald-200 bg-white/90 p-6 shadow-sm">
+                    <h2 className="mb-4 font-semibold text-slate-900">Turnos de hoy</h2>
+                    <div className="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/40 p-8 text-center text-sm text-emerald-700">
                         Próximas consultas del día — próximamente
                     </div>
                 </section>

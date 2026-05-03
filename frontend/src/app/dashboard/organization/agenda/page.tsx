@@ -8,9 +8,9 @@ import {
 } from '@/lib/organization-api';
 
 const attendanceBadge: Record<OrgAgendaItem['attendance'], string> = {
-    pending: 'bg-amber-100 text-amber-800',
-    present: 'bg-emerald-100 text-emerald-800',
-    absent: 'bg-rose-100 text-rose-800',
+    pending: 'border border-amber-200 bg-amber-100 text-amber-800',
+    present: 'border border-emerald-200 bg-emerald-100 text-emerald-800',
+    absent: 'border border-rose-200 bg-rose-100 text-rose-800',
 };
 
 const attendanceLabel: Record<OrgAgendaItem['attendance'], string> = {
@@ -60,9 +60,14 @@ export default function OrgAgendaPage() {
         <OrganizationPortalGuard>
             <main className="min-h-screen py-10 px-4">
                 <div className="max-w-6xl mx-auto space-y-6">
-                    <header>
-                        <h1 className="text-3xl font-bold text-slate-900">Agenda Organizacional</h1>
-                        <p className="text-slate-500 mt-1">Vista de turnos de todos los profesionales para hoy</p>
+                    <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+                        <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panel organizacional</p>
+                        <h1 className="mt-3 text-3xl font-bold text-slate-900">Agenda Organizacional</h1>
+                        <p className="mt-2 text-slate-600">Vista de turnos de todos los profesionales para hoy</p>
+                        <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                            <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sky-700">Operación diaria</span>
+                            <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-violet-700">Vista consolidada</span>
+                        </div>
                     </header>
 
                     {/* Backend connectivity banner */}
@@ -73,16 +78,16 @@ export default function OrgAgendaPage() {
                     )}
 
                     {/* Professional filter */}
-                    <div className="flex gap-3 flex-wrap">
-                        <span className="text-sm text-slate-500 self-center mr-2">Filtrar por profesional:</span>
+                    <div className="flex flex-wrap gap-3 rounded-2xl border border-sky-200 bg-sky-50/50 p-4">
+                        <span className="mr-2 self-center text-sm text-sky-800">Filtrar por profesional:</span>
                         {professionalNames.map((f) => (
                             <button
                                 key={f}
                                 type="button"
                                 onClick={() => setActiveFilter(f)}
                                 className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${activeFilter === f
-                                        ? 'border-orange-400 bg-orange-50 text-orange-700 font-medium'
-                                        : 'border-slate-200 hover:border-orange-400 hover:text-orange-600'
+                                        ? 'border-sky-300 bg-white text-sky-800 font-medium shadow-sm'
+                                        : 'border-sky-200 bg-sky-50/40 text-slate-600 hover:border-sky-300 hover:text-sky-700'
                                     }`}
                             >
                                 {f}
@@ -90,9 +95,9 @@ export default function OrgAgendaPage() {
                         ))}
                     </div>
 
-                    <section className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white/90 shadow-sm">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                            <thead className="border-b border-sky-100 bg-sky-50/70">
                                 <tr>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Hora</th>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Profesional</th>
@@ -116,7 +121,7 @@ export default function OrgAgendaPage() {
                                     </tr>
                                 ) : (
                                     filtered.map((item) => (
-                                        <tr key={item.id} className="hover:bg-slate-50 transition-colors">
+                                        <tr key={item.id} className="transition-colors hover:bg-sky-50/40">
                                             <td className="px-6 py-4 font-mono text-slate-700">
                                                 {new Date(item.scheduledAt).toLocaleTimeString('es-AR', {
                                                     hour: '2-digit',

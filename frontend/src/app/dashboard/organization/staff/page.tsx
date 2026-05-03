@@ -39,18 +39,25 @@ export default function OrgStaffPage() {
         <OrganizationPortalGuard>
             <main className="min-h-screen py-10 px-4">
                 <div className="max-w-5xl mx-auto space-y-6">
-                    <header className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-3xl font-bold text-slate-900">Gestión de Staff</h1>
-                            <p className="text-slate-500 mt-1">Profesionales que forman parte de la organización</p>
+                    <header className="rounded-3xl border border-slate-200 bg-white/90 p-6 shadow-sm sm:p-8">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                            <div>
+                                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">Panel organizacional</p>
+                                <h1 className="mt-3 text-3xl font-bold text-slate-900">Gestión de Staff</h1>
+                                <p className="mt-2 text-slate-600">Profesionales que forman parte de la organización</p>
+                                <div className="mt-4 flex flex-wrap gap-2 text-xs font-medium">
+                                    <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-violet-700">Equipo asistencial</span>
+                                    <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700">Estado operativo</span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-violet-700"
+                                onClick={() => alert('Funcionalidad disponible en la próxima versión')}
+                            >
+                                + Agregar profesional
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
-                            onClick={() => alert('Funcionalidad disponible en la próxima versión')}
-                        >
-                            + Agregar profesional
-                        </button>
                     </header>
 
                     {/* Backend connectivity banner */}
@@ -60,9 +67,9 @@ export default function OrgStaffPage() {
                         </div>
                     )}
 
-                    <section className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                    <section className="overflow-hidden rounded-2xl border border-violet-200 bg-white/90 shadow-sm">
                         <table className="w-full text-sm">
-                            <thead className="bg-slate-50 border-b border-slate-200">
+                            <thead className="border-b border-violet-100 bg-violet-50/70">
                                 <tr>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Profesional</th>
                                     <th className="text-left px-6 py-3 font-medium text-slate-600">Especialidad</th>
@@ -86,23 +93,23 @@ export default function OrgStaffPage() {
                                     </tr>
                                 ) : (
                                     staff.map((member) => (
-                                        <tr key={member.id} className="hover:bg-slate-50 transition-colors">
+                                        <tr key={member.id} className="transition-colors hover:bg-violet-50/35">
                                             <td className="px-6 py-4 font-medium text-slate-800">{member.name}</td>
                                             <td className="px-6 py-4 text-slate-600">{member.specialty ?? '—'}</td>
                                             <td className="px-6 py-4 text-slate-600">
-                                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${member.role === 'admin' ? 'bg-orange-100 text-orange-800' : 'bg-slate-100 text-slate-700'}`}>
+                                                <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${member.role === 'admin' ? 'border-amber-200 bg-amber-100 text-amber-800' : 'border-violet-200 bg-violet-100 text-violet-800'}`}>
                                                     {roleLabels[member.role] ?? member.role}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${member.isActive ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+                                                <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${member.isActive ? 'border-emerald-200 bg-emerald-100 text-emerald-800' : 'border-rose-200 bg-rose-100 text-rose-800'}`}>
                                                     {member.isActive ? 'Activo' : 'Inactivo'}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
                                                     type="button"
-                                                    className="text-xs text-slate-500 hover:text-orange-600 transition-colors"
+                                                    className="rounded-lg border border-violet-200 bg-white px-2.5 py-1 text-xs font-medium text-violet-700 transition hover:border-violet-300 hover:bg-violet-50"
                                                     onClick={() => alert('Funcionalidad disponible en la próxima versión')}
                                                 >
                                                     Ver detalle

@@ -51,6 +51,9 @@ export function SoapEvolutionForm({
   problems = [],
   onSuccess,
 }: Props) {
+  const fieldClassName =
+    'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100';
+
   const {
     register,
     handleSubmit,
@@ -138,9 +141,9 @@ export function SoapEvolutionForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="space-y-5 p-6 bg-white rounded-xl shadow"
+      className="space-y-5 rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm"
     >
-      <h2 className="text-xl font-semibold text-slate-800">
+      <h2 className="text-xl font-semibold text-slate-900">
         Nueva Evolución SOAP
       </h2>
 
@@ -151,7 +154,7 @@ export function SoapEvolutionForm({
       {appointmentId && <input type="hidden" {...register('appointmentId')} />}
 
       {/* Date / Time */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 rounded-xl border border-sky-200 bg-sky-50/60 p-4 sm:grid-cols-2">
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Fecha *
@@ -159,7 +162,7 @@ export function SoapEvolutionForm({
           <input
             {...register('evolutionDate')}
             type="date"
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={fieldClassName}
           />
           {errors.evolutionDate && (
             <p className="mt-1 text-xs text-red-600">
@@ -174,7 +177,7 @@ export function SoapEvolutionForm({
           <input
             {...register('evolutionTime')}
             type="time"
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={fieldClassName}
           />
           {errors.evolutionTime && (
             <p className="mt-1 text-xs text-red-600">
@@ -186,13 +189,13 @@ export function SoapEvolutionForm({
 
       {/* Associate to problem */}
       {problems.length > 0 && (
-        <div>
+        <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-4">
           <label className="block text-sm font-medium text-slate-700">
             Asociar a Problema (HCOP)
           </label>
           <select
             {...register('problemId')}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
+            className={fieldClassName}
           >
             <option value="">Sin asociar</option>
             {problems.map((p) => (
@@ -204,7 +207,7 @@ export function SoapEvolutionForm({
         </div>
       )}
 
-      <div>
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
         <label className="block text-sm font-semibold text-slate-700">
           S — Subjetivo (MC + EA)
         </label>
@@ -217,7 +220,7 @@ export function SoapEvolutionForm({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleEditorAction('bold')}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
           >
             Negrita
           </button>
@@ -225,7 +228,7 @@ export function SoapEvolutionForm({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleEditorAction('italic')}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
           >
             Cursiva
           </button>
@@ -233,7 +236,7 @@ export function SoapEvolutionForm({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleEditorAction('insertUnorderedList')}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
           >
             Lista
           </button>
@@ -241,7 +244,7 @@ export function SoapEvolutionForm({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => handleEditorAction('insertOrderedList')}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-emerald-200 bg-white px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-50"
           >
             Numerada
           </button>
@@ -249,7 +252,7 @@ export function SoapEvolutionForm({
             type="button"
             onMouseDown={(event) => event.preventDefault()}
             onClick={clearSubjectiveEditor}
-            className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+            className="rounded-lg border border-amber-200 bg-white px-2 py-1 text-xs font-semibold text-amber-700 hover:bg-amber-50"
           >
             Limpiar
           </button>
@@ -265,7 +268,7 @@ export function SoapEvolutionForm({
             ref={subjectiveEditorRef}
             contentEditable
             onInput={syncSubjectiveField}
-            className="min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            className="min-h-28 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-100"
             aria-label="Campo enriquecido para subjetivo"
             suppressContentEditableWarning
           />
@@ -274,7 +277,7 @@ export function SoapEvolutionForm({
 
       {/* SOAP sections */}
       {soapFields.map((field) => (
-        <div key={field.key}>
+        <div key={field.key} className="rounded-xl border border-violet-200 bg-violet-50/35 p-4">
           <label className="block text-sm font-semibold text-slate-700">
             {field.label}
           </label>
@@ -283,7 +286,7 @@ export function SoapEvolutionForm({
             {...register(field.key)}
             rows={3}
             placeholder={field.placeholder}
-            className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500 resize-y"
+            className="block w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-100"
           />
         </div>
       ))}
@@ -291,7 +294,7 @@ export function SoapEvolutionForm({
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+        className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-700 disabled:opacity-50"
       >
         {isSubmitting ? 'Guardando evolución…' : 'Guardar Evolución'}
       </button>

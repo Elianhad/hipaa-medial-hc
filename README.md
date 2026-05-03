@@ -6,15 +6,15 @@ Plataforma de Historia Clínica Electrónica (HCE) multi-tenant, conforme a **HI
 
 ## Stack Tecnológico
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | Next.js 16 (App Router), TailwindCSS |
-| Backend | Node.js, NestJS (arquitectura modular) |
-| Base de Datos | PostgreSQL con Row-Level Security (RLS) |
-| Autenticación | Auth0 (roles: SuperAdmin, OrgAdmin, OrgStaff, Paciente) |
-| Almacenamiento | AWS S3 (SSE-KMS, encriptado at-rest) |
-| Estándar Clínico | FHIR R4 → AWS HealthLake |
-| Identidad (mock) | MockRENAPER — simula API gubernamental argentina |
+| Capa             | Tecnología                                              |
+| ---------------- | ------------------------------------------------------- |
+| Frontend         | Next.js 16 (App Router), TailwindCSS                    |
+| Backend          | Node.js, NestJS (arquitectura modular)                  |
+| Base de Datos    | PostgreSQL con Row-Level Security (RLS)                 |
+| Autenticación    | Auth0 (roles: SuperAdmin, OrgAdmin, OrgStaff, Paciente) |
+| Almacenamiento   | AWS S3 (SSE-KMS, encriptado at-rest)                    |
+| Estándar Clínico | FHIR R4 → AWS HealthLake                                |
+| Identidad (mock) | MockRENAPER — simula API gubernamental argentina        |
 
 ---
 
@@ -125,9 +125,43 @@ hipaa-medial-hc/
 │   └── next.config.js
 │
 └── docs/
+    ├── frontend-consistency-guide.md   # Guía de consistencia visual y de implementación frontend
     └── fhir-examples/
         └── evolution-bundle.json    # FHIR R4 Transaction Bundle example
 ```
+
+---
+
+## Documentación Interna Recomendada
+
+- Guía de consistencia frontend (para desarrolladores y agentes IA):
+  - [`docs/frontend-consistency-guide.md`](docs/frontend-consistency-guide.md)
+
+---
+
+## Uso de la Guía en Pull Requests
+
+Toda PR que modifique UI en dashboards debe validar esta guía:
+
+- [`docs/frontend-consistency-guide.md`](docs/frontend-consistency-guide.md)
+
+Incluir en la descripción de la PR:
+
+1. Dominio afectado (professional, organization, staff, patient).
+2. Semántica de color aplicada (sky, emerald, violet, amber, rose).
+3. Patrones usados (header, tabla, formulario, modal, acciones secundarias).
+4. Evidencia responsive (desktop y mobile).
+5. Confirmación de validación de errores en archivos modificados.
+
+Checklist mínima para PRs de frontend:
+
+- [ ] Usa layout y header estándar de dashboard.
+- [ ] Mantiene semántica de color correcta.
+- [ ] Inputs y controles con foco visible.
+- [ ] Tablas y badges consistentes.
+- [ ] Modales alineados al patrón compartido.
+- [ ] Botones secundarios con estilo outlined común.
+- [ ] Sin regresiones de errores en archivos modificados.
 
 ---
 
@@ -171,13 +205,13 @@ El `MockRenaperService` simula la API gubernamental argentina RENAPER:
 
 Datos de prueba disponibles:
 
-| DNI | Sexo | Nombre | Apellido |
-|-----|------|--------|---------|
-| 12345678 | M | Juan | Pérez |
-| 87654321 | F | María | González |
-| 11223344 | M | Carlos | Rodríguez |
-| 55667788 | F | Ana | Martínez |
-| 99887766 | X | Alex | López |
+| DNI      | Sexo | Nombre | Apellido  |
+| -------- | ---- | ------ | --------- |
+| 12345678 | M    | Juan   | Pérez     |
+| 87654321 | F    | María  | González  |
+| 11223344 | M    | Carlos | Rodríguez |
+| 55667788 | F    | Ana    | Martínez  |
+| 99887766 | X    | Alex   | López     |
 
 ---
 
@@ -186,6 +220,7 @@ Datos de prueba disponibles:
 Ver [`docs/fhir-examples/evolution-bundle.json`](docs/fhir-examples/evolution-bundle.json) para el payload completo.
 
 El `FhirService` construye y envía un **Transaction Bundle** con:
+
 - `Encounter` — sesión de consulta
 - `Condition` — diagnóstico (ICD-10 codificado)
 - `Observation` ×4 — secciones SOAP (LOINC codificadas)
@@ -286,12 +321,12 @@ pnpm --dir frontend run test
 
 ## Roles
 
-| Rol | Acceso |
-|-----|--------|
-| `SuperAdmin` | Todos los tenants (bypass RLS) |
-| `OrgAdmin` | Su tenant — gestión de profesionales y auditoría |
-| `Professional` | Su tenant — agenda y registros clínicos |
-| `Paciente` | Sus propios registros (multi-tenant consolidado) |
+| Rol            | Acceso                                           |
+| -------------- | ------------------------------------------------ |
+| `SuperAdmin`   | Todos los tenants (bypass RLS)                   |
+| `OrgAdmin`     | Su tenant — gestión de profesionales y auditoría |
+| `Professional` | Su tenant — agenda y registros clínicos          |
+| `Paciente`     | Sus propios registros (multi-tenant consolidado) |
 
 ---
 

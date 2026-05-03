@@ -154,31 +154,33 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
   }
 
   const sex = watch('sex');
+  const fieldClassName =
+    'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm transition focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100';
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="max-w-2xl mx-auto space-y-6 p-6 bg-white rounded-xl shadow"
+      className="mx-auto w-full max-w-2xl space-y-6 rounded-2xl border border-slate-200 bg-white/95 p-6 shadow-sm"
     >
-      <h2 className="text-2xl font-semibold text-slate-800">
+      <h2 className="text-2xl font-semibold text-slate-900">
         Registro de Paciente
       </h2>
 
       {/* ── DNI Scanner ──────────────────────────────────────────── */}
-      <section className="space-y-3 rounded-lg border border-indigo-200 bg-indigo-50 p-4">
+      <section className="space-y-3 rounded-xl border border-sky-200 bg-sky-50/70 p-4">
         <div className="flex items-center gap-2">
           <span className="text-lg">📷</span>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-indigo-700">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-sky-800">
             Lectura de DNI con escáner
           </h3>
           {scanVerified && (
-            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
               ✅ DNI leído
             </span>
           )}
         </div>
 
-        <p className="text-xs text-indigo-600">
+        <p className="text-xs text-sky-700">
           Haga clic en el campo y escanee el código de barras del DNI. Los datos se completarán automáticamente.
           Si no cuenta con escáner, complete los campos manualmente a continuación.
         </p>
@@ -190,16 +192,16 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
           onChange={(e) => setScanInput(e.target.value)}
           onKeyDown={handleScanInput}
           placeholder="Haga clic aquí y escanee el DNI…"
-          className="block w-full rounded-md border border-indigo-300 bg-white px-3 py-2 text-sm placeholder:text-indigo-300 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="block w-full rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm placeholder:text-sky-300 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
         />
       </section>
 
       {/* ── Datos de Identidad ───────────────────────────────────── */}
-      <section className="space-y-4 rounded-lg border border-slate-200 p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <section className="space-y-4 rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-emerald-800">
           Datos de identidad
           {scanVerified && (
-            <span className="ml-2 text-xs font-normal normal-case text-green-600">
+            <span className="ml-2 text-xs font-normal normal-case text-emerald-700">
               (completado por escáner — puede editar si es necesario)
             </span>
           )}
@@ -216,7 +218,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
               type="text"
               inputMode="numeric"
               placeholder="12345678"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className={fieldClassName}
             />
             {errors.dni && (
               <p className="mt-1 text-xs text-red-600">{errors.dni.message}</p>
@@ -230,7 +232,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             </label>
             <select
               {...register('sex')}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className={fieldClassName}
             >
               <option value="">Seleccionar…</option>
               <option value="M">Masculino</option>
@@ -251,7 +253,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
               {...register('lastName')}
               type="text"
               placeholder="García"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className={fieldClassName}
             />
             {errors.lastName && (
               <p className="mt-1 text-xs text-red-600">{errors.lastName.message}</p>
@@ -267,7 +269,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
               {...register('firstName')}
               type="text"
               placeholder="Juan Carlos"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className={fieldClassName}
             />
             {errors.firstName && (
               <p className="mt-1 text-xs text-red-600">{errors.firstName.message}</p>
@@ -282,16 +284,16 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('birthDate')}
               type="date"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
+              className={fieldClassName}
             />
           </div>
         </div>
 
         {/* Identity verification status badge */}
-        <div className={`flex items-center gap-2 rounded-md px-3 py-2 text-xs ${
+        <div className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs ${
           scanVerified
-            ? 'bg-green-50 text-green-700'
-            : 'bg-amber-50 text-amber-700'
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-amber-200 bg-amber-50 text-amber-700'
         }`}>
           <span>{scanVerified ? '✅' : '⚠️'}</span>
           <span>
@@ -303,8 +305,8 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
       </section>
 
       {/* ── Datos de Contacto y Afiliación ───────────────────────── */}
-      <section className="space-y-4 rounded-lg border border-slate-200 p-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+      <section className="space-y-4 rounded-xl border border-violet-200 bg-violet-50/40 p-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-violet-800">
           Datos de contacto y afiliación
         </h3>
 
@@ -314,7 +316,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('email')}
               type="email"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
             {errors.email && (
               <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>
@@ -326,7 +328,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('phone')}
               type="tel"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
           </div>
 
@@ -335,7 +337,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('address')}
               type="text"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
           </div>
 
@@ -344,7 +346,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('city')}
               type="text"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
           </div>
 
@@ -353,7 +355,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('province')}
               type="text"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
           </div>
 
@@ -362,7 +364,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
             <input
               {...register('insuranceMemberNumber')}
               type="text"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-blue-500"
+              className={fieldClassName}
             />
           </div>
         </div>
@@ -372,7 +374,7 @@ export function PatientRegistrationForm({ onSuccess }: { onSuccess?: (patientId:
       <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full rounded-md bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSubmitting ? 'Guardando…' : 'Registrar Paciente'}
       </button>
